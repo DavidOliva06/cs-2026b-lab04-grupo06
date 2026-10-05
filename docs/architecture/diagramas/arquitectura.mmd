@@ -1,0 +1,82 @@
+%% SismoReporta AQP - Arquitectura elegida: B (monolito modular con ingesta asincrona)
+%% Convencion: la flecha A --> B significa "A depende de B" (A llama o lee a B)
+flowchart TB
+    ciudadano(["Ciudadano"])
+    brigadista(["Brigadista"])
+    coordinador(["Coordinador"])
+
+    subgraph CLIENTE["Cliente: PWA en el navegador"]
+        direction TB
+        uiReporte["Formulario de reporte<br/>foto, ubicacion, consentimiento"]
+        uiBrigada["Vista de brigadista<br/>asignaciones y estado"]
+        uiPanel["Panel del coordinador<br/>mapa, zonas, asignacion"]
+        sync["Sincronizador<br/>reintentos con espera aleatoria"]
+        colaLocal[("Cola local<br/>IndexedDB")]
+    end
+
+    subgraph EXTERNO["Servicios externos"]
+        teselas["Servicio de teselas de mapa<br/>OpenStreetMap o proveedor"]
+    end
+
+    subgraph SERVIDOR["Servidor unico en la nube"]
+        direction TB
+        proxy["Proxy inverso<br/>TLS, bufer, limite de peticiones"]
+
+        subgraph MONOLITO["Monolito modular en Python"]
+            direction TB
+
+            subgraph ENTRADA["Capa de entrada"]
+                api["API HTTP"]
+                auth["Autenticacion y roles"]
+            end
+
+            subgraph DOMINIO["Modulos de dominio"]
+                reportes["Reportes<br/>ingesta idempotente por UUID"]
+                mapa["Mapa de danos"]
+                priorizacion["Priorizacion de zonas"]
+                brigadas["Brigadas<br/>asignacion y estado"]
+            end
+
+            worker["Worker en segundo plano<br/>fotos y recalculo periodico"]
+        end
+
+        subgraph DATOS["Almacenamiento"]
+            pg[("PostgreSQL<br/>reportes, usuarios, consentimientos,<br/>asignaciones, cola de trabajos")]
+            fotos[("Disco<br/>fotos")]
+        end
+    end
+
+    %% Actores
+    ciudadano --> uiReporte
+    brigadista --> uiBrigada
+    coordinador --> uiPanel
+
+    %% Cliente
+    uiReporte -->|"guarda el reporte"| colaLocal
+    sync -->|"lee pendientes"| colaLocal
+    sync -->|"HTTPS"| proxy
+    uiBrigada -->|"HTTPS"| proxy
+    uiPanel -->|"HTTPS"| proxy
+    uiPanel -->|"mapa base"| teselas
+
+    %% Capa de entrada
+    proxy --> api
+    api --> auth
+    api --> reportes
+    api --> mapa
+    api --> brigadas
+
+    %% Dominio
+    mapa -->|"lee zonas priorizadas"| priorizacion
+    brigadas -->|"lee zonas priorizadas"| priorizacion
+    worker -->|"ejecuta el recalculo"| priorizacion
+    worker -->|"procesa fotos"| reportes
+
+    %% Datos
+    auth --> pg
+    reportes -->|"reporte y trabajo en una transaccion"| pg
+    reportes --> fotos
+    mapa --> pg
+    priorizacion --> pg
+    brigadas --> pg
+    worker -->|"toma trabajos"| pg
