@@ -49,3 +49,234 @@ La alternativa B optimiza la parte fácil del problema, el backend, y deja casi 
 4. Veredicto
 
 B sigue siendo la mejor de las tres, pero la recomendación estaba incompleta. Para que sea viable en un mes hay que recortar el alcance: en el MVP entran el reporte sin foto obligatoria, el mapa y la asignación manual, y la priorización automática queda para después.
+## 3. Prompt 3 Creacion de arquitectura.mmd
+%% SismoReporta AQP - Arquitectura elegida: B (monolito modular con ingesta asincrona)
+%% Convencion: la flecha A --> B significa "A depende de B" (A llama o lee a B)
+flowchart TB
+    ciudadano(["Ciudadano"])
+    brigadista(["Brigadista"])
+    coordinador(["Coordinador"])
+
+    subgraph CLIENTE["Cliente: PWA en el navegador"]
+        direction TB
+        uiReporte["Formulario de reporte<br/>foto, ubicacion, consentimiento"]
+        uiBrigada["Vista de brigadista<br/>asignaciones y estado"]
+        uiPanel["Panel del coordinador<br/>mapa, zonas, asignacion"]
+        sync["Sincronizador<br/>reintentos con espera aleatoria"]
+        colaLocal[("Cola local<br/>IndexedDB")]
+    end
+
+    subgraph EXTERNO["Servicios externos"]
+        teselas["Servicio de teselas de mapa<br/>OpenStreetMap o proveedor"]
+    end
+
+    subgraph SERVIDOR["Servidor unico en la nube"]
+        direction TB
+        proxy["Proxy inverso<br/>TLS, bufer, limite de peticiones"]
+
+        subgraph MONOLITO["Monolito modular en Python"]
+            direction TB
+
+            subgraph ENTRADA["Capa de entrada"]
+                api["API HTTP"]
+                auth["Autenticacion y roles"]
+            end
+
+            subgraph DOMINIO["Modulos de dominio"]
+                reportes["Reportes<br/>ingesta idempotente por UUID"]
+                mapa["Mapa de danos"]
+                priorizacion["Priorizacion de zonas"]
+                brigadas["Brigadas<br/>asignacion y estado"]
+            end
+
+            worker["Worker en segundo plano<br/>fotos y recalculo periodico"]
+        end
+
+        subgraph DATOS["Almacenamiento"]
+            pg[("PostgreSQL<br/>reportes, usuarios, consentimientos,<br/>asignaciones, cola de trabajos")]
+            fotos[("Disco<br/>fotos")]
+        end
+    end
+
+    %% Actores
+    ciudadano --> uiReporte
+    brigadista --> uiBrigada
+    coordinador --> uiPanel
+
+    %% Cliente
+    uiReporte -->|"guarda el reporte"| colaLocal
+    sync -->|"lee pendientes"| colaLocal
+    sync -->|"HTTPS"| proxy
+    uiBrigada -->|"HTTPS"| proxy
+    uiPanel -->|"HTTPS"| proxy
+    uiPanel -->|"mapa base"| teselas
+
+    %% Capa de entrada
+    proxy --> api
+    api --> auth
+    api --> reportes
+    api --> mapa
+    api --> brigadas
+
+    %% Dominio
+    mapa -->|"lee zonas priorizadas"| priorizacion
+    brigadas -->|"lee zonas priorizadas"| priorizacion
+    worker -->|"ejecuta el recalculo"| priorizacion
+    worker -->|"procesa fotos"| reportes
+
+    %% Datos
+    auth --> pg
+    reportes -->|"reporte y trabajo en una transaccion"| pg
+    reportes --> fotos
+    mapa --> pg
+    priorizacion --> pg
+    brigadas --> pg
+    worker -->|"toma trabajos"| pg
+## 4. Prompt 4 Creacion de alternativa.uml
+@startuml
+title SismoReporta AQP - Alternativa A descartada: monolito en capas síncrono
+
+actor Ciudadano
+actor Brigadista
+actor Coordinador
+
+node "Celular o navegador" {
+  component "PWA offline-first" as PWA
+  database "Cola local\n(IndexedDB)" as IDB
+}
+
+cloud "Servicio de teselas de mapa" as Teselas
+
+node "Servidor único en la nube" {
+  component "Proxy inverso (TLS)" as Proxy
+
+  package "Monolito en capas síncrono (Python)" {
+    component "Capa de presentación\nAPI HTTP, autenticación y roles" as Presentacion
+    component "Capa de lógica de negocio\nreportes, mapa, priorización, brigadas" as Negocio
+    component "Capa de acceso a datos" as Datos
+  }
+
+  database "PostgreSQL" as PG
+  folder "Disco de fotos" as Fotos
+}
+
+Ciudadano --> PWA
+Brigadista --> PWA
+Coordinador --> PWA
+
+PWA --> IDB : guarda reportes pendientes
+PWA --> Proxy : HTTPS
+PWA --> Teselas : mapa base
+
+Proxy --> Presentacion
+Presentacion --> Negocio : llamada síncrona
+Negocio --> Datos
+Datos --> PG : SQL
+Datos --> Fotos : archivos
+
+note right of Negocio
+  Descartada: obtuvo 3,35 en la matriz de decisión, frente a 4,00 de la alternativa B.
+  Puntuó 2 de 5 en disponibilidad ante picos (C1, peso 30 %) y en rendimiento (C3, peso 15 %).
+  Cada petición procesa la foto y la priorización antes de responder,
+  así que el pico de QA-01 frena a la vez la ingesta y el mapa.
+  Sus 5 de 5 en tiempo de entrega (C2) y simplicidad (C4) no compensan el atributo crítico.
+end note
+@enduml
+## 5. Prompt 5 Creacion de despliegue.py(Corregida)
+from pathlib import Path
+
+from diagrams import Cluster, Diagram, Edge
+from diagrams.generic.device import Mobile
+from diagrams.generic.storage import Storage
+from diagrams.onprem.client import Client
+from diagrams.onprem.database import Postgresql
+from diagrams.onprem.monitoring import Grafana, Prometheus
+from diagrams.onprem.network import Gunicorn, Nginx, OSM
+from diagrams.programming.language import Python
+
+SALIDA = Path(__file__).parent / "img" / "despliegue"
+
+ATRIBUTOS_GRAFO = {
+    "fontsize": "20",
+    "labelloc": "t",
+    "pad": "0.6",
+    "splines": "spline",
+    "nodesep": "0.6",
+    "ranksep": "1.1",
+    "bgcolor": "white",
+}
+
+with Diagram(
+    "SismoReporta AQP - Despliegue (alternativa B: monolito modular con ingesta asincrona)",
+    filename=str(SALIDA),
+    outformat="png",
+    show=False,
+    direction="TB",
+    graph_attr=ATRIBUTOS_GRAFO,
+):
+
+    # --- Dispositivos de los usuarios -------------------------------------
+    with Cluster("Dispositivos de los usuarios (red movil intermitente)"):
+        celular_ciudadano = Mobile(
+            "Celular del ciudadano\nPWA + cola local en IndexedDB\n(gama baja, R-05)"
+        )
+        celular_brigadista = Mobile("Celular del brigadista\nPWA: asignaciones y estado")
+        navegador_coordinador = Client("Navegador del coordinador\nPanel: mapa y asignacion")
+
+    # --- Servidor unico en la nube ----------------------------------------
+    with Cluster("Servidor unico en la nube - 1 vCPU / 2 GB, US$ 20-30 al mes (R-03)"):
+
+        proxy = Nginx("Proxy inverso (Nginx)\nTLS 1.2+, buffer de subidas,\nlimite de peticiones")
+
+        with Cluster("Monolito modular en Python (un solo despliegue)"):
+            app = Gunicorn(
+                "Proceso web (Gunicorn)\nAPI HTTP, roles,\nreportes | mapa | priorizacion | brigadas"
+            )
+            worker = Python("Worker en segundo plano\nprocesa fotos y\nrecalcula la priorizacion")
+
+        with Cluster("PostgreSQL (una sola instancia)"):
+            bd = Postgresql(
+                "Esquema de datos\nreportes, usuarios, consentimientos,\nzonas, asignaciones"
+            )
+            cola = Postgresql("Tabla de trabajos = cola\nSELECT ... FOR UPDATE SKIP LOCKED")
+
+        fotos = Storage("Volumen de fotos\nseparado del volumen del sistema")
+        agente = Prometheus("Agente de metricas y logs\n(expone /metrics)")
+
+    # --- Servicios externos ------------------------------------------------
+    with Cluster("Servicios externos"):
+        teselas = OSM("Teselas de mapa\nOpenStreetMap o proveedor")
+
+    # --- Monitoreo y respaldo, fuera del servidor --------------------------
+    with Cluster("Monitoreo y respaldo (fuera del servidor caido)"):
+        monitoreo = Grafana("Monitoreo externo\nuptime, p95 del mapa,\ntamano de la cola")
+        respaldo = Storage("Respaldo diario cifrado\nalmacenamiento de objetos")
+
+    # --- Trafico de los usuarios ------------------------------------------
+    celular_ciudadano >> Edge(label="HTTPS: reporte de ~1 KB primero,\nfoto despues; reintento con espera aleatoria") >> proxy
+    celular_brigadista >> Edge(label="HTTPS: consulta y\nactualiza su asignacion") >> proxy
+    navegador_coordinador >> Edge(label="HTTPS: mapa y\npriorizacion (p95 <= 3 s)") >> proxy
+    navegador_coordinador >> Edge(label="HTTPS: mapa base\n(directo al proveedor)", style="dashed") >> teselas
+
+    # --- Dentro del servidor ----------------------------------------------
+    proxy >> Edge(label="HTTP local (socket Unix)") >> app
+    app >> Edge(label="SQL: una transaccion\nreporte + trabajo") >> bd
+    app >> Edge(label="SQL: inserta el trabajo") >> cola
+    app >> Edge(label="escribe la foto original") >> fotos
+    worker << Edge(label="toma trabajos pendientes\n(sondeo, SKIP LOCKED)") << cola
+    worker >> Edge(label="SQL: guarda zonas priorizadas\n(<= 60 s)") >> bd
+    worker >> Edge(label="redimensiona y\nlimpia metadatos EXIF") >> fotos
+
+    # --- Monitoreo y respaldo ---------------------------------------------
+    app >> Edge(label="metricas y logs", style="dotted") >> agente
+    worker >> Edge(label="estado de la cola", style="dotted") >> agente
+    agente >> Edge(label="raspado cada 30 s", style="dotted") >> monitoreo
+    monitoreo >> Edge(label="sonda HTTPS /salud cada 60 s\ny alerta al desarrollador", style="dashed", color="firebrick") >> proxy
+    bd >> Edge(label="pg_dump diario", style="dotted") >> respaldo
+    fotos >> Edge(label="copia diaria", style="dotted") >> respaldo
+
+print(f"Diagrama generado en {SALIDA.with_suffix('.png')}")
+
+Modificacion: El diagrama funcionaba pero las etiquetas de nodos vecinos se solapan. Se ajusto la separacion y se acorto las lineas para mejorar la vista.
+
+
