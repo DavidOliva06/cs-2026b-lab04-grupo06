@@ -1,0 +1,49 @@
+@startuml
+title SismoReporta AQP - Alternativa A descartada: monolito en capas síncrono
+
+actor Ciudadano
+actor Brigadista
+actor Coordinador
+
+node "Celular o navegador" {
+  component "PWA offline-first" as PWA
+  database "Cola local\n(IndexedDB)" as IDB
+}
+
+cloud "Servicio de teselas de mapa" as Teselas
+
+node "Servidor único en la nube" {
+  component "Proxy inverso (TLS)" as Proxy
+
+  package "Monolito en capas síncrono (Python)" {
+    component "Capa de presentación\nAPI HTTP, autenticación y roles" as Presentacion
+    component "Capa de lógica de negocio\nreportes, mapa, priorización, brigadas" as Negocio
+    component "Capa de acceso a datos" as Datos
+  }
+
+  database "PostgreSQL" as PG
+  folder "Disco de fotos" as Fotos
+}
+
+Ciudadano --> PWA
+Brigadista --> PWA
+Coordinador --> PWA
+
+PWA --> IDB : guarda reportes pendientes
+PWA --> Proxy : HTTPS
+PWA --> Teselas : mapa base
+
+Proxy --> Presentacion
+Presentacion --> Negocio : llamada síncrona
+Negocio --> Datos
+Datos --> PG : SQL
+Datos --> Fotos : archivos
+
+note right of Negocio
+  Descartada: obtuvo 3,35 en la matriz de decisión, frente a 4,00 de la alternativa B.
+  Puntuó 2 de 5 en disponibilidad ante picos (C1, peso 30 %) y en rendimiento (C3, peso 15 %).
+  Cada petición procesa la foto y la priorización antes de responder,
+  así que el pico de QA-01 frena a la vez la ingesta y el mapa.
+  Sus 5 de 5 en tiempo de entrega (C2) y simplicidad (C4) no compensan el atributo crítico.
+end note
+@enduml
