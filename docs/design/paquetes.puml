@@ -1,0 +1,66 @@
+@startuml
+title SismoReporta AQP - Diagrama de paquetes del monolito modular (ADR-001)
+
+' Supuesto: solo se modelan los módulos del servidor. Las clases de la PWA
+' (ServicioReportes, AlmacenLocalReportes, PuertoEnvioReportes) quedan fuera.
+' Supuesto: ConsultaReportes, ConsultaZonasAsignadas, ZonaPriorizada, Zona, Brigada,
+' Asignacion y los servicios de mapa, priorización y brigadas son nuevos respecto
+' al diagrama de clases de la HU-01.
+
+package "compartido" as compartido {
+  class Ubicacion
+  class Zona
+  interface ColaTrabajos <<puerto>>
+}
+
+package "reportes" as reportes {
+  class Reporte
+  enum EstadoReporte
+  class ServicioIngesta
+  interface AlmacenServidorReportes <<puerto>>
+  interface ConsultaReportes <<puerto>>
+}
+
+package "priorización" as priorizacion {
+  class ServicioPriorizacion
+  class ZonaPriorizada
+  interface ConsultaZonasAsignadas <<puerto>>
+}
+
+package "brigadas" as brigadas {
+  class Brigada
+  class Asignacion
+  class ServicioAsignacion
+}
+
+package "mapa" as mapa {
+  class ServicioMapa
+}
+
+mapa ..> priorizacion : usa ZonaPriorizada
+mapa ..> reportes : usa ConsultaReportes
+mapa ..> compartido : usa Zona
+
+brigadas ..> priorizacion : usa ZonaPriorizada
+brigadas ..> reportes : usa Reporte\n(verificar, rechazar, marcarAtendido)
+brigadas ..> compartido : usa Zona
+
+priorizacion ..> reportes : usa ConsultaReportes
+priorizacion ..> compartido : usa Zona y ColaTrabajos
+
+reportes ..> compartido : usa Ubicacion y ColaTrabajos
+
+' Resolución del ciclo (ADR-004): brigadas implementa el puerto que define priorización.
+ServicioAsignacion ..|> ConsultaZonasAsignadas : implementa
+
+note as ReglaDependencias
+  Regla de dependencias
+  1. Las dependencias van en un solo sentido:
+     mapa y brigadas -> priorización -> reportes -> compartido.
+  2. El paquete compartido no depende de ningún módulo.
+  3. Un módulo usa de otro solo sus puertos y clases públicas,
+     nunca sus tablas ni sus clases internas.
+  4. No se permiten ciclos. Si un módulo necesita datos de otro
+     que ya depende de él, define un puerto y el otro lo implementa.
+end note
+@enduml
