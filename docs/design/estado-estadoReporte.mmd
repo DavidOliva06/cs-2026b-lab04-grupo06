@@ -1,95 +1,18 @@
-@startuml
-title HU-01: Enviar un reporte sin señal y sincronizarlo - Diagrama de clases
+stateDiagram-v2
+    %% Entidad: Reporte
+    %% Los estados coinciden con la enumeración EstadoReporte del diagrama de clases.
 
-enum EstadoReporte {
-  BORRADOR
-  ENCOLADO
-  RECIBIDO
-  VERIFICADO
-  ATENDIDO
-  RECHAZADO
-}
+    [*] --> Borrador : crearReporte() [consentimiento aceptado]
 
-class Ciudadano {
-  ' Supuesto: se identifica al ciudadano con un id para asociarle sus reportes.
-  - id: UUID
-  + puedeReportar(): Boolean
-}
+    Borrador --> Encolado : encolar() [foto y ubicación completas]
 
-class Consentimiento {
-  ' Si fechaAceptacion tiene valor, el consentimiento está aceptado.
-  - fechaAceptacion: DateTime [0..1]
-  + aceptar(fecha: DateTime): void
-  + estaAceptado(): Boolean
-}
+    Encolado --> Encolado : enviar() [servidor no confirma]
+    Encolado --> Recibido : recibir() [servidor confirma el reporte]
 
-class Reporte {
-  ' Supuesto: el id se genera en el celular para que el servidor detecte reenvíos (criterio 3).
-  ' BORRADOR y ENCOLADO ocurren en el celular; los demás estados, en el servidor.
-  - id: UUID
-  - fechaCreacion: DateTime
-  - fechaRecepcion: DateTime [0..1]
-  + estaEncolado(): Boolean
-  + encolar(): void
-  + marcarRecibido(fecha: DateTime): void
-  ' Supuesto: verificar, rechazar y marcarAtendido salen del diagrama de estados, no de la HU-01.
-  + verificar(): void
-  + rechazar(): void
-  + marcarAtendido(): void
-}
+    Recibido --> Verificado : verificar() [brigadista confirma el daño]
+    Recibido --> Rechazado : rechazar() [reporte falso o repetido]
 
-class Foto {
-  ' Supuesto: la foto se guarda como bytes junto con su tipo de archivo.
-  - contenido: Byte[]
-  - tipoMime: String
-}
+    Verificado --> Atendido : marcarAtendido() [brigada terminó la atención]
 
-class Ubicacion {
-  - latitud: Double
-  - longitud: Double
-}
-
-' Lado del celular: crea el reporte, lo guarda y lo reenvía (criterios 1, 2 y 4).
-class ServicioReportes {
-  + crearReporte(ciudadano: Ciudadano, foto: Foto, ubicacion: Ubicacion): Reporte
-  + sincronizarPendientes(): void
-}
-
-' Lado del servidor: recibe el reporte y descarta duplicados (criterio 3).
-class ServicioIngesta {
-  ' Devuelve true si el servidor tiene el reporte, sea nuevo o repetido.
-  + recibir(reporte: Reporte): Boolean
-}
-
-' Puerto de almacenamiento en el celular.
-interface AlmacenLocalReportes <<puerto>> {
-  ' guardar crea el reporte o actualiza el existente.
-  + guardar(reporte: Reporte): void
-  + buscarPorEstado(estado: EstadoReporte): List<Reporte>
-}
-
-' Puerto de almacenamiento en el servidor.
-interface AlmacenServidorReportes <<puerto>> {
-  ' Operación atómica: devuelve true si lo guardó y false si ya existía.
-  + guardarSiNoExiste(reporte: Reporte): Boolean
-}
-
-' Puerto de salida del celular hacia el servidor.
-interface PuertoEnvioReportes <<puerto>> {
-  ' Devuelve true si el servidor confirmó que tiene el reporte.
-  + enviar(reporte: Reporte): Boolean
-}
-
-Ciudadano "1" *-- "1" Consentimiento
-Ciudadano "1" -- "0..*" Reporte : registra >
-Reporte "1" *-- "1" Foto
-Reporte "1" *-- "1" Ubicacion
-Reporte "0..*" --> "1" EstadoReporte : estado
-
-ServicioReportes ..> Ciudadano : verifica consentimiento
-ServicioReportes ..> Reporte : crea
-ServicioReportes "1" --> "1" AlmacenLocalReportes
-ServicioReportes "1" --> "1" PuertoEnvioReportes
-ServicioIngesta "1" --> "1" AlmacenServidorReportes
-ServicioIngesta ..> Reporte : recibe
-@enduml
+    Atendido --> [*]
+    Rechazado --> [*]

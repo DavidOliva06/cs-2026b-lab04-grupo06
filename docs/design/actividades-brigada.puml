@@ -1,0 +1,58 @@
+@startuml
+title Proceso: Priorización y asignación de brigadas
+
+|Sistema|
+start
+
+repeat
+  :Recalcular la prioridad de las zonas\nsegún cantidad y gravedad de reportes\n(cada 60 segundos o menos);
+
+  if (¿Hay zonas con reportes sin atender?) then (sí)
+    |Coordinador|
+    :Revisar el mapa y las zonas priorizadas;
+    :Seleccionar la zona de mayor prioridad;
+
+    if (¿Hay una brigada disponible?) then (sí)
+      :Asignar la brigada a la zona;
+
+      |Sistema|
+      :Registrar la asignación;
+      fork
+        :Actualizar el mapa de zonas;
+      fork again
+        :Publicar la asignación\nen la vista del brigadista;
+      end fork
+
+      |Brigadista|
+      :Ver la asignación recibida;
+      :Marcar el estado "En camino";
+
+      while (¿Quedan reportes de la zona por revisar?) is (sí)
+        :Revisar el daño de un reporte;
+        if (¿El daño es real?) then (sí)
+          :Marcar el reporte como verificado;
+          :Atender el daño;
+          :Marcar el reporte como atendido;
+        else (no)
+          :Marcar el reporte como rechazado;
+        endif
+      endwhile (no)
+
+      :Marcar la asignación como "Atendido";
+
+      |Sistema|
+      :Liberar la brigada;
+    else (no)
+      |Coordinador|
+      :Dejar la zona en espera\nhasta que se libere una brigada;
+    endif
+  else (no)
+    |Sistema|
+    :Esperar nuevos reportes;
+  endif
+
+  |Coordinador|
+repeat while (¿Continúa la emergencia?) is (sí) not (no)
+
+stop
+@enduml
