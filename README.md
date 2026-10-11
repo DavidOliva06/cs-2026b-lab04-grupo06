@@ -98,6 +98,52 @@ flowchart TB
 - [ADR-001: Estilo arquitectónico](docs/architecture/adr/001-estilo-arquitectonico.md)
 - [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-traajos-en-postgresql.md)
 - [ADR-003: ...](docs/architecture/adr/003-pwa-offline-first.md)
+## Diseño UML (Lab 05)
+
+Diseño detallado de la historia [HU-01: Enviar un reporte sin señal y sincronizarlo](docs/design/historia.md).
+
+### Diagrama de estados de `Reporte`
+
+```mermaid
+stateDiagram-v2
+    %% Entidad: Reporte
+    %% Los estados coinciden con la enumeración EstadoReporte del diagrama de clases.
+
+    [*] --> Borrador : crearReporte() [consentimiento aceptado]
+
+    Borrador --> Encolado : encolar() [foto y ubicación completas]
+
+    Encolado --> Encolado : enviar() [servidor no confirma]
+    Encolado --> Recibido : recibir() [servidor confirma el reporte]
+
+    Recibido --> Verificado : verificar() [brigadista confirma el daño]
+    Recibido --> Rechazado : rechazar() [reporte falso o repetido]
+
+    Verificado --> Atendido : marcarAtendido() [brigada terminó la atención]
+
+    Atendido --> [*]
+    Rechazado --> [*]
+```
+
+Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd)
+
+### Demás diagramas
+
+| Diagrama | Fuente | Imagen |
+|---|---|---|
+| Clases | [clases.puml](docs/design/clases.puml) | [clases.png](docs/design/img/clases.png) |
+| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [secuencia-reporte.png](docs/design/img/secuencia-reporte.png) |
+| Actividades | [actividades-brigada.puml](docs/design/actividades-brigada.puml) | [actividades-brigada.png](docs/design/img/actividades-brigada.png) |
+| Paquetes | [paquetes.puml](docs/design/paquetes.puml) | [paquetes.png](docs/design/img/paquetes.png) |
+| Clases generadas desde el código | [classes_en.puml](docs/design/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
+
+### Código y verificación
+
+- [reportes.py](src/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
+- [round-trip.md](docs/design/round-trip.md): diferencias entre el diagrama de diseño y el generado desde el código.
+- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas.
+- [bitacora-ia.md](docs/design/bitacora-ia.md): registro de las interacciones con la IA.
+- [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md): resolución del ciclo entre priorización y brigadas.
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
 En definitiva el trabajo se agilizo utilizandolas para los procesos que no se tiene tanto conocimiento como el uso de mermaid y de puml.
