@@ -279,4 +279,13 @@ print(f"Diagrama generado en {SALIDA.with_suffix('.png')}")
 
 Modificacion: El diagrama funcionaba pero las etiquetas de nodos vecinos se solapan. Se ajusto la separacion y se acorto las lineas para mejorar la vista.
 
-
+## 6. Prompt 6 Creacion de clases(Sin Aceptar)
+    Prompt:
+    Actúa como diseñador de software orientado a objetos. Contexto: módulo almacenamiento de un monolito modular con ingesta asíncrona como estilo arquitectónico
+    Historia y criterios: el archivo historia.md.
+    Tarea: genera un diagrama de clases en PlantUML con atributos tipados, operaciones, multiplicidades,
+    una enumeración para el estado del pedido y una interfaz (puerto) para la pasarela de pagos.
+    Formato: solo el código PlantUML. No agregues clases que no se deriven de la historia; si asumes algo, indícalo en un
+    comentario.
+    Respuesta:
+    
