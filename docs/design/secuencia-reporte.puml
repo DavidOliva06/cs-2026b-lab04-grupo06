@@ -1,0 +1,65 @@
+@startuml
+title HU-01: Enviar un reporte sin señal y sincronizarlo - Diagrama de secuencia
+
+actor "Ciudadano" as ACT
+boundary "FormularioReporte\n(UI de la PWA)" as UI
+control "ControladorReportes" as CTRL
+participant "ServicioReportes" as SVC
+entity "ciudadano: Ciudadano" as CIU
+entity "reporte: Reporte" as REP
+participant "AlmacenLocalReportes\n<<puerto>>" as LOCAL
+participant "PuertoEnvioReportes\n<<puerto>>" as ENVIO
+participant "ServicioIngesta" as ING
+participant "AlmacenServidorReportes\n<<puerto>>" as SERV
+
+== Registro del reporte sin señal ==
+
+ACT -> UI: pulsa "Enviar" con foto y ubicación
+UI -> CTRL: enviarReporte(foto, ubicacion)
+CTRL -> SVC: crearReporte(ciudadano, foto, ubicacion)
+SVC -> CIU: puedeReportar()
+CIU --> SVC: Boolean
+
+alt consentimiento aceptado (éxito, criterio 1)
+  SVC -> REP: <<create>> Reporte(id, foto, ubicacion)
+  REP --> SVC: reporte
+  SVC -> LOCAL: guardar(reporte)
+  LOCAL --> SVC
+  SVC --> CTRL: reporte
+  CTRL -> UI: mostrarEstado(PENDIENTE_DE_ENVIO)
+  UI --> ACT: "Pendiente de envío"
+else consentimiento no aceptado (error, criterio 4)
+  SVC --> CTRL: error: consentimiento no aceptado
+  CTRL -> UI: mostrarConsentimiento()
+  UI --> ACT: pantalla de consentimiento
+end
+
+... el celular recupera la señal o el ciudadano abre la app con conexión ...
+
+== Sincronización (criterios 2 y 3) ==
+
+UI ->> CTRL: alRecuperarConexion()
+CTRL -> SVC: sincronizarPendientes()
+SVC -> LOCAL: buscarPorEstado(PENDIENTE_DE_ENVIO)
+LOCAL --> SVC: List<Reporte>
+
+loop por cada reporte pendiente
+  SVC -> ENVIO: enviar(reporte)
+  ENVIO -> ING: recibir(reporte)
+  ING -> SERV: guardarSiNoExiste(reporte)
+  SERV --> ING: Boolean (false si ya existía)
+  ING --> ENVIO: true (el servidor tiene el reporte)
+  ENVIO --> SVC: confirmado
+
+  opt confirmado es true
+    SVC -> REP: marcarEnviado(fecha)
+    REP --> SVC
+    SVC -> LOCAL: guardar(reporte)
+    LOCAL --> SVC
+  end
+end
+
+SVC --> CTRL
+CTRL ->> UI: mostrarEstado(ENVIADO)
+UI --> ACT: "Enviado"
+@enduml
