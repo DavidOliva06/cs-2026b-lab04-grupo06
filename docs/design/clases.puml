@@ -2,8 +2,12 @@
 title HU-01: Enviar un reporte sin señal y sincronizarlo - Diagrama de clases
 
 enum EstadoReporte {
-  PENDIENTE_DE_ENVIO
-  ENVIADO
+  BORRADOR
+  ENCOLADO
+  RECIBIDO
+  VERIFICADO
+  ATENDIDO
+  RECHAZADO
 }
 
 class Ciudadano {
@@ -21,12 +25,17 @@ class Consentimiento {
 
 class Reporte {
   ' Supuesto: el id se genera en el celular para que el servidor detecte reenvíos (criterio 3).
-  ' El estado solo se usa en el celular; el servidor no lo persiste.
+  ' BORRADOR y ENCOLADO ocurren en el celular; los demás estados, en el servidor.
   - id: UUID
   - fechaCreacion: DateTime
-  - fechaEnvio: DateTime [0..1]
-  + estaPendiente(): Boolean
-  + marcarEnviado(fecha: DateTime): void
+  - fechaRecepcion: DateTime [0..1]
+  + estaEncolado(): Boolean
+  + encolar(): void
+  + marcarRecibido(fecha: DateTime): void
+  ' Supuesto: verificar, rechazar y marcarAtendido salen del diagrama de estados, no de la HU-01.
+  + verificar(): void
+  + rechazar(): void
+  + marcarAtendido(): void
 }
 
 class Foto {
@@ -54,7 +63,7 @@ class ServicioIngesta {
 
 ' Puerto de almacenamiento en el celular.
 interface AlmacenLocalReportes <<puerto>> {
-  ' guardar crea el reporte o actualiza el existente (por ejemplo, tras marcarlo enviado).
+  ' guardar crea el reporte o actualiza el existente.
   + guardar(reporte: Reporte): void
   + buscarPorEstado(estado: EstadoReporte): List<Reporte>
 }
