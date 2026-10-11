@@ -1,0 +1,81 @@
+@startuml classes_en
+set namespaceSeparator none
+class "AdaptadorAlmacenLocalReportes" as reportes.AdaptadorAlmacenLocalReportes {
+  {abstract}buscar_por_estado(estado: EstadoReporte) -> list[Reporte]
+  {abstract}guardar(reporte: Reporte) -> None
+}
+class "AdaptadorAlmacenServidorReportes" as reportes.AdaptadorAlmacenServidorReportes {
+  {abstract}guardar_si_no_existe(reporte: Reporte) -> bool
+}
+class "AdaptadorEnvioReportes" as reportes.AdaptadorEnvioReportes {
+  {abstract}enviar(reporte: Reporte) -> bool
+}
+class "AlmacenLocalReportes" as reportes.AlmacenLocalReportes {
+  {abstract}buscar_por_estado(estado: EstadoReporte) -> list[Reporte]
+  {abstract}guardar(reporte: Reporte) -> None
+}
+class "AlmacenServidorReportes" as reportes.AlmacenServidorReportes {
+  {abstract}guardar_si_no_existe(reporte: Reporte) -> bool
+}
+class "Ciudadano" as reportes.Ciudadano {
+  consentimiento
+  id : UUID
+  reportes : list[Reporte]
+  {abstract}puede_reportar() -> bool
+}
+class "Consentimiento" as reportes.Consentimiento {
+  fecha_aceptacion : datetime | None
+  {abstract}aceptar(fecha: datetime) -> None
+  {abstract}esta_aceptado() -> bool
+}
+class "EstadoReporte" as reportes.EstadoReporte {
+  name
+}
+class "Foto" as reportes.Foto {
+  contenido : bytes
+  tipo_mime : str
+}
+class "PuertoEnvioReportes" as reportes.PuertoEnvioReportes {
+  {abstract}enviar(reporte: Reporte) -> bool
+}
+class "Reporte" as reportes.Reporte {
+  ciudadano
+  estado
+  fecha_creacion : datetime
+  fecha_recepcion : datetime | None
+  foto
+  id : UUID
+  ubicacion
+  encolar() -> None
+  esta_encolado() -> bool
+  marcar_atendido() -> None
+  marcar_recibido(fecha: datetime) -> None
+  rechazar() -> None
+  verificar() -> None
+}
+class "ServicioIngesta" as reportes.ServicioIngesta {
+  almacen_servidor
+  {abstract}recibir(reporte: Reporte) -> bool
+}
+class "ServicioReportes" as reportes.ServicioReportes {
+  almacen_local
+  puerto_envio
+  {abstract}crear_reporte(ciudadano: Ciudadano, foto: Foto, ubicacion: Ubicacion) -> Reporte
+  {abstract}sincronizar_pendientes() -> None
+}
+class "Ubicacion" as reportes.Ubicacion {
+  latitud : float
+  longitud : float
+}
+reportes.AdaptadorAlmacenLocalReportes --|> reportes.AlmacenLocalReportes
+reportes.AdaptadorAlmacenServidorReportes --|> reportes.AlmacenServidorReportes
+reportes.AdaptadorEnvioReportes --|> reportes.PuertoEnvioReportes
+reportes.ServicioReportes --> reportes.AlmacenLocalReportes : almacen_local
+reportes.ServicioIngesta --> reportes.AlmacenServidorReportes : almacen_servidor
+reportes.Reporte --> reportes.Ciudadano : ciudadano
+reportes.Ciudadano --> reportes.Consentimiento : consentimiento
+reportes.Reporte --> reportes.EstadoReporte : estado
+reportes.Reporte --> reportes.Foto : foto
+reportes.ServicioReportes --> reportes.PuertoEnvioReportes : puerto_envio
+reportes.Reporte --> reportes.Ubicacion : ubicacion
+@enduml
