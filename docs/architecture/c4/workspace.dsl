@@ -25,13 +25,12 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             pwa = container "Aplicación web progresiva" "Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión." "JavaScript, CSS, Service Worker e IndexedDB" "Web Browser"
 
             api = container "API" "Monolito modular: ingesta idempotente, mapa, priorización y brigadas." "Python" {
-                http = component "API HTTP" "Recibe las peticiones y las dirige al módulo correspondiente." "Python"
-                auth = component "Autenticación y roles" "Verifica la sesión y el rol: ciudadano, brigadista o coordinador." "Python"
-                reportes = component "Módulo Reportes" "Ingesta idempotente por UUID y consulta de reportes." "Python"
-                mapa = component "Módulo Mapa" "Arma el mapa de daños agrupado por zonas." "Python"
-                priorizacion = component "Módulo Priorización" "Calcula la prioridad de las zonas. Define el puerto ConsultaZonasAsignadas." "Python"
-                brigadas = component "Módulo Brigadas" "Asigna brigadas y registra su estado. Implementa ConsultaZonasAsignadas." "Python"
-                compartido = component "Módulo Compartido" "Ubicacion, Zona y el puerto ColaTrabajos." "Python"
+                # Un componente por paquete de docs/design/paquetes.puml (Lab 05).
+                compartido = component "Compartido" "Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos." "Python"
+                reportes = component "Reportes" "Ingesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes." "Python"
+                priorizacion = component "Priorización" "Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (ADR-004)." "Python"
+                brigadas = component "Brigadas" "Brigada, Asignacion y ServicioAsignacion; implementa ConsultaZonasAsignadas." "Python"
+                mapa = component "Mapa" "ServicioMapa: arma el mapa de daños agrupado por zonas." "Python"
             }
 
             worker = container "Worker" "Procesa fotos y recalcula la priorización de forma periódica." "Python"
@@ -56,30 +55,33 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         sismo.worker -> sismo.bd "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas" "SQL/TCP"
         sismo.worker -> sismo.fotos "Redimensiona las fotos y elimina los metadatos EXIF" "E/S de archivos"
 
-        # Componentes de la API
-        sismo.pwa -> sismo.api.http "Envía reportes y consultas, a través del proxy inverso" "HTTPS/JSON"
-        sismo.api.http -> sismo.api.auth "Valida la sesión y el rol" "Llamada en proceso"
-        sismo.api.http -> sismo.api.reportes "Entrega los reportes recibidos" "Llamada en proceso"
-        sismo.api.http -> sismo.api.mapa "Pide el mapa de daños" "Llamada en proceso"
-        sismo.api.http -> sismo.api.brigadas "Pide y actualiza asignaciones" "Llamada en proceso"
+        # Componentes de la API: entradas desde la PWA
+        sismo.pwa -> sismo.api.reportes "Envía reportes de daños" "HTTPS/JSON"
+        sismo.pwa -> sismo.api.mapa "Pide el mapa de daños" "HTTPS/JSON"
+        sismo.pwa -> sismo.api.brigadas "Consulta y actualiza asignaciones" "HTTPS/JSON"
 
-        sismo.api.mapa -> sismo.api.priorizacion "Lee las zonas priorizadas" "Llamada en proceso"
-        sismo.api.mapa -> sismo.api.reportes "Consulta reportes mediante ConsultaReportes" "Llamada en proceso"
-        sismo.api.brigadas -> sismo.api.priorizacion "Lee las zonas priorizadas e implementa ConsultaZonasAsignadas" "Llamada en proceso"
-        sismo.api.brigadas -> sismo.api.reportes "Verifica, rechaza o marca como atendido un reporte" "Llamada en proceso"
-        sismo.api.priorizacion -> sismo.api.reportes "Consulta reportes mediante ConsultaReportes" "Llamada en proceso"
-
-        sismo.api.reportes -> sismo.api.compartido "Encola trabajos mediante ColaTrabajos" "Llamada en proceso"
-        sismo.api.priorizacion -> sismo.api.compartido "Usa Zona y ColaTrabajos" "Llamada en proceso"
+        # Dependencias entre componentes (paquetes.puml, líneas 40-54). Sin ciclos:
+        # mapa y brigadas -> priorización -> reportes -> compartido.
+        sismo.api.mapa -> sismo.api.priorizacion "Usa ZonaPriorizada" "Llamada en proceso"
+        sismo.api.mapa -> sismo.api.reportes "Usa ConsultaReportes" "Llamada en proceso"
         sismo.api.mapa -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
+
+        sismo.api.brigadas -> sismo.api.priorizacion "Usa ZonaPriorizada e implementa ConsultaZonasAsignadas (ADR-004)" "Llamada en proceso"
+        sismo.api.brigadas -> sismo.api.reportes "Usa Reporte: verificar, rechazar, marcarAtendido" "Llamada en proceso"
         sismo.api.brigadas -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
 
-        sismo.api.auth -> sismo.bd "Lee usuarios y roles" "SQL/TCP"
+        sismo.api.priorizacion -> sismo.api.reportes "Usa ConsultaReportes" "Llamada en proceso"
+        sismo.api.priorizacion -> sismo.api.compartido "Usa Zona y ColaTrabajos" "Llamada en proceso"
+
+        sismo.api.reportes -> sismo.api.compartido "Usa Ubicacion y ColaTrabajos" "Llamada en proceso"
+
+        # Dependencias hacia otros contenedores
         sismo.api.reportes -> sismo.bd "Guarda el reporte y su trabajo en una transacción" "SQL/TCP"
         sismo.api.reportes -> sismo.fotos "Guarda la foto original" "E/S de archivos"
+        sismo.api.priorizacion -> sismo.bd "Lee reportes por zona y las zonas priorizadas" "SQL/TCP"
+        sismo.api.brigadas -> sismo.bd "Lee y escribe brigadas y asignaciones" "SQL/TCP"
         sismo.api.mapa -> sismo.bd "Lee reportes agrupados por zona" "SQL/TCP"
-        sismo.api.priorizacion -> sismo.bd "Lee las zonas priorizadas" "SQL/TCP"
-        sismo.api.brigadas -> sismo.bd "Lee y escribe asignaciones" "SQL/TCP"
+        sismo.api.compartido -> sismo.bd "Inserta trabajos en la tabla de trabajos (ColaTrabajos)" "SQL/TCP"
 
         produccion = deploymentEnvironment "Producción" {
 
@@ -116,7 +118,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             autolayout lr
         }
 
-        component sismo.api "Componentes" "Componentes del contenedor API." {
+        component sismo.api "Componentes" "Componentes del contenedor API, uno por paquete de paquetes.puml." {
             include *
             autolayout lr
         }
