@@ -3,14 +3,17 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
     !identifiers hierarchical
 
     # Supuestos:
-    # - Tecnologías de los contenedores: solo las del ADR-001 (Python, JavaScript, CSS, PostgreSQL).
+    # - Tecnologías de los contenedores: las del ADR-001 (Python, JavaScript, CSS, PostgreSQL),
+    #   más Service Worker e IndexedDB, que son APIs del navegador que exige la PWA (ADR-003).
     # - Contenedor C4 = unidad que se ejecuta o almacena datos por separado (proceso,
     #   aplicación en el navegador, base de datos, sistema de archivos). No se usa Docker:
     #   los procesos corren directamente en el servidor.
+    # - Contenedores del ADR-001: API (monolito modular), Worker y Base de datos PostgreSQL.
+    #   La PWA viene del ADR-003 y el almacenamiento de fotos, de las fotos que procesa el worker (ADR-001).
     # - El proxy inverso es infraestructura: solo se configura, no se programa. Va como
     #   nodo de infraestructura en la vista de despliegue, no como contenedor.
     # - La cola local (IndexedDB) es parte de la PWA y la cola de trabajos es una tabla
-    #   de PostgreSQL (ADR-002), así que ninguna es un contenedor propio.
+    #   de PostgreSQL (ADR-002), así que ninguna es un contenedor propio ni lleva la forma "Queue".
 
     model {
         ciudadano = person "Ciudadano" "Reporta daños con foto y ubicación tras un sismo."
@@ -19,7 +22,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
         sismo = softwareSystem "SismoReporta AQP" "Recibe reportes de daños, prioriza zonas y asigna brigadas." {
 
-            pwa = container "Aplicación web progresiva" "Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión." "JavaScript, CSS"
+            pwa = container "Aplicación web progresiva" "Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión." "JavaScript, CSS, Service Worker e IndexedDB" "Web Browser"
 
             api = container "API" "Monolito modular: ingesta idempotente, mapa, priorización y brigadas." "Python" {
                 http = component "API HTTP" "Recibe las peticiones y las dirige al módulo correspondiente." "Python"
@@ -35,7 +38,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
             bd = container "Base de datos" "Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos." "PostgreSQL" "Database"
 
-            fotos = container "Almacenamiento de fotos" "Fotos de los reportes, en un volumen separado del sistema." "Sistema de archivos" "Database"
+            fotos = container "Almacenamiento de fotos" "Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado." "Sistema de archivos" "Database"
         }
 
         teselas = softwareSystem "Servicio de teselas de mapa" "Mapa base: OpenStreetMap o un proveedor de teselas." "Externo"
@@ -46,15 +49,15 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         coordinador -> sismo.pwa "Revisa el mapa y asigna brigadas" "HTTPS"
 
         # Contenedores
-        sismo.pwa -> sismo.api "Envía reportes y consultas, a través del proxy inverso" "HTTPS (JSON)"
-        sismo.pwa -> teselas "Obtiene el mapa base" "HTTPS"
-        sismo.api -> sismo.bd "Lee y escribe datos" "SQL"
+        sismo.pwa -> sismo.api "Envía reportes y consultas, a través del proxy inverso" "HTTPS/JSON"
+        sismo.pwa -> teselas "Obtiene el mapa base" "HTTPS/PNG"
+        sismo.api -> sismo.bd "Lee y escribe datos" "SQL/TCP"
         sismo.api -> sismo.fotos "Guarda la foto original" "E/S de archivos"
-        sismo.worker -> sismo.bd "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas" "SQL"
+        sismo.worker -> sismo.bd "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas" "SQL/TCP"
         sismo.worker -> sismo.fotos "Redimensiona las fotos y elimina los metadatos EXIF" "E/S de archivos"
 
         # Componentes de la API
-        sismo.pwa -> sismo.api.http "Envía reportes y consultas, a través del proxy inverso" "HTTPS (JSON)"
+        sismo.pwa -> sismo.api.http "Envía reportes y consultas, a través del proxy inverso" "HTTPS/JSON"
         sismo.api.http -> sismo.api.auth "Valida la sesión y el rol" "Llamada en proceso"
         sismo.api.http -> sismo.api.reportes "Entrega los reportes recibidos" "Llamada en proceso"
         sismo.api.http -> sismo.api.mapa "Pide el mapa de daños" "Llamada en proceso"
@@ -71,12 +74,12 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         sismo.api.mapa -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
         sismo.api.brigadas -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
 
-        sismo.api.auth -> sismo.bd "Lee usuarios y roles" "SQL"
-        sismo.api.reportes -> sismo.bd "Guarda el reporte y su trabajo en una transacción" "SQL"
+        sismo.api.auth -> sismo.bd "Lee usuarios y roles" "SQL/TCP"
+        sismo.api.reportes -> sismo.bd "Guarda el reporte y su trabajo en una transacción" "SQL/TCP"
         sismo.api.reportes -> sismo.fotos "Guarda la foto original" "E/S de archivos"
-        sismo.api.mapa -> sismo.bd "Lee reportes agrupados por zona" "SQL"
-        sismo.api.priorizacion -> sismo.bd "Lee las zonas priorizadas" "SQL"
-        sismo.api.brigadas -> sismo.bd "Lee y escribe asignaciones" "SQL"
+        sismo.api.mapa -> sismo.bd "Lee reportes agrupados por zona" "SQL/TCP"
+        sismo.api.priorizacion -> sismo.bd "Lee las zonas priorizadas" "SQL/TCP"
+        sismo.api.brigadas -> sismo.bd "Lee y escribe asignaciones" "SQL/TCP"
 
         produccion = deploymentEnvironment "Producción" {
 
@@ -97,8 +100,8 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
                 teselas = softwareSystemInstance teselas
             }
 
-            dispositivo.pwa -> servidor.proxy "Envía reportes y consultas" "HTTPS (JSON)"
-            servidor.proxy -> servidor.api "Reenvía las peticiones" "HTTP local"
+            dispositivo.pwa -> servidor.proxy "Envía reportes y consultas" "HTTPS/JSON"
+            servidor.proxy -> servidor.api "Reenvía las peticiones" "HTTP/JSON local"
         }
     }
 
@@ -148,6 +151,9 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             }
             element "Database" {
                 shape Cylinder
+            }
+            element "Web Browser" {
+                shape WebBrowser
             }
             element "Externo" {
                 background #999999
