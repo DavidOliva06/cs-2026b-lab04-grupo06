@@ -1,0 +1,54 @@
+@startuml
+title <size:24>Component View: SismoReporta AQP - API</size>\n<size:24>Componentes del contenedor API, uno por paquete de paquetes.puml.</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+System_Boundary("SismoReportaAQP_boundary", "SismoReporta AQP", $tags="") {
+  Container_Boundary("SismoReportaAQP.API_boundary", "API", $tags="") {
+    Component(SismoReportaAQP.API.Brigadas, "Brigadas", $techn="Python", $descr="Brigada, Asignacion y ServicioAsignacion; implementa ConsultaZonasAsignadas.", $tags="", $link="")
+    Component(SismoReportaAQP.API.Mapa, "Mapa", $techn="Python", $descr="ServicioMapa: arma el mapa de daños agrupado por zonas.", $tags="", $link="")
+    Component(SismoReportaAQP.API.Compartido, "Compartido", $techn="Python", $descr="Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos.", $tags="", $link="")
+    Component(SismoReportaAQP.API.Reportes, "Reportes", $techn="Python", $descr="Ingesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes.", $tags="", $link="")
+    Component(SismoReportaAQP.API.Priorización, "Priorización", $techn="Python", $descr="Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (ADR-004).", $tags="", $link="")
+  }
+
+  ContainerDb(SismoReportaAQP.Basededatos, "Base de datos", $techn="PostgreSQL", $descr="Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos.", $tags="", $link="")
+  ContainerDb(SismoReportaAQP.Almacenamientodefotos, "Almacenamiento de fotos", $techn="Sistema de archivos", $descr="Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado.", $tags="", $link="")
+  Container(SismoReportaAQP.Aplicaciónwebprogresiva, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión.", $tags="", $link="")
+}
+
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, SismoReportaAQP.API.Reportes, "Envía reportes de daños", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, SismoReportaAQP.API.Mapa, "Pide el mapa de daños", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, SismoReportaAQP.API.Brigadas, "Consulta y actualiza asignaciones", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SismoReportaAQP.API.Mapa, SismoReportaAQP.API.Priorización, "Usa ZonaPriorizada", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Mapa, SismoReportaAQP.API.Reportes, "Usa ConsultaReportes", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Mapa, SismoReportaAQP.API.Compartido, "Usa Zona", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Brigadas, SismoReportaAQP.API.Priorización, "Usa ZonaPriorizada e implementa ConsultaZonasAsignadas (ADR-004)", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Brigadas, SismoReportaAQP.API.Reportes, "Usa Reporte: verificar, rechazar, marcarAtendido", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Brigadas, SismoReportaAQP.API.Compartido, "Usa Zona", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Priorización, SismoReportaAQP.API.Reportes, "Usa ConsultaReportes", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Priorización, SismoReportaAQP.API.Compartido, "Usa Zona y ColaTrabajos", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.API.Compartido, "Usa Ubicacion y ColaTrabajos", $techn="Llamada en proceso", $tags="", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.Basededatos, "Guarda el reporte y su trabajo en una transacción", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.Almacenamientodefotos, "Guarda la foto original", $techn="E/S de archivos", $tags="", $link="")
+Rel(SismoReportaAQP.API.Priorización, SismoReportaAQP.Basededatos, "Lee reportes por zona y las zonas priorizadas", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.API.Brigadas, SismoReportaAQP.Basededatos, "Lee y escribe brigadas y asignaciones", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.API.Mapa, SismoReportaAQP.Basededatos, "Lee reportes agrupados por zona", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.API.Compartido, SismoReportaAQP.Basededatos, "Inserta trabajos en la tabla de trabajos (ColaTrabajos)", $techn="SQL/TCP", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

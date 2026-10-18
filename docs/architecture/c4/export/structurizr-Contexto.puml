@@ -1,0 +1,30 @@
+@startuml
+title <size:24>System Context View: SismoReporta AQP</size>\n<size:24>Diagrama de contexto de SismoReporta AQP.</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+
+Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo.", $tags="", $link="")
+System(Serviciodeteselasdemapa, "Servicio de teselas de mapa", $descr="Mapa base: OpenStreetMap o un proveedor de teselas.", $tags="", $link="")
+Person(Brigadista, "Brigadista", $descr="Atiende las zonas asignadas y actualiza su estado.", $tags="", $link="")
+Person(Coordinador, "Coordinador", $descr="Revisa el mapa de daños, prioriza zonas y asigna brigadas.", $tags="", $link="")
+System(SismoReportaAQP, "SismoReporta AQP", $descr="Recibe reportes de daños, prioriza zonas y asigna brigadas.", $tags="", $link="")
+
+Rel(Ciudadano, SismoReportaAQP, "Envía reportes de daños con foto y ubicación", $techn="HTTPS", $tags="", $link="")
+Rel(Brigadista, SismoReportaAQP, "Consulta su asignación y marca su estado", $techn="HTTPS", $tags="", $link="")
+Rel(Coordinador, SismoReportaAQP, "Revisa el mapa y asigna brigadas", $techn="HTTPS", $tags="", $link="")
+Rel(SismoReportaAQP, Serviciodeteselasdemapa, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

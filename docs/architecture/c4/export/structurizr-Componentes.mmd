@@ -1,0 +1,52 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Component View: SismoReporta AQP - API"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 4 ["SismoReporta AQP"]
+      style 4 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 6 ["API"]
+        style 6 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        10["<div style='font-weight: bold'>Brigadas</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Brigada, Asignacion y<br />ServicioAsignacion;<br />implementa<br />ConsultaZonasAsignadas.</div>"]
+        style 10 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        11["<div style='font-weight: bold'>Mapa</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>ServicioMapa: arma el mapa de<br />daños agrupado por zonas.</div>"]
+        style 11 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        7["<div style='font-weight: bold'>Compartido</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Tipos comunes Ubicacion y<br />Zona, y el puerto<br />ColaTrabajos.</div>"]
+        style 7 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        8["<div style='font-weight: bold'>Reportes</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Ingesta idempotente por UUID<br />(ServicioIngesta) y puertos<br />AlmacenServidorReportes y<br />ConsultaReportes.</div>"]
+        style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        9["<div style='font-weight: bold'>Priorización</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Calcula ZonaPriorizada y<br />define el puerto<br />ConsultaZonasAsignadas<br />(ADR-004).</div>"]
+        style 9 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      end
+
+      13[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos.</div>")]
+      style 13 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      14[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+      style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      5["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+      style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    5-. "<div>Envía reportes de daños</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->8
+    5-. "<div>Pide el mapa de daños</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->11
+    5-. "<div>Consulta y actualiza<br />asignaciones</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->10
+    11-. "<div>Usa ZonaPriorizada</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->9
+    11-. "<div>Usa ConsultaReportes</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->8
+    11-. "<div>Usa Zona</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->7
+    10-. "<div>Usa ZonaPriorizada e<br />implementa<br />ConsultaZonasAsignadas<br />(ADR-004)</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->9
+    10-. "<div>Usa Reporte: verificar,<br />rechazar, marcarAtendido</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->8
+    10-. "<div>Usa Zona</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->7
+    9-. "<div>Usa ConsultaReportes</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->8
+    9-. "<div>Usa Zona y ColaTrabajos</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->7
+    8-. "<div>Usa Ubicacion y ColaTrabajos</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->7
+    8-. "<div>Guarda el reporte y su<br />trabajo en una transacción</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+    8-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->14
+    9-. "<div>Lee reportes por zona y las<br />zonas priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+    10-. "<div>Lee y escribe brigadas y<br />asignaciones</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+    11-. "<div>Lee reportes agrupados por<br />zona</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+    7-. "<div>Inserta trabajos en la tabla<br />de trabajos (ColaTrabajos)</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+
+  end

@@ -1,0 +1,24 @@
+@startuml contexto-manual
+' Diagrama de contexto escrito a mano con las macros de C4-PlantUML.
+' Mismo contenido que la vista "Contexto" de workspace.dsl.
+!include <C4/C4_Context>
+
+LAYOUT_LEFT_RIGHT()
+
+title SismoReporta AQP - Diagrama de contexto
+
+Person(ciudadano, "Ciudadano", "Reporta daños con foto y ubicación tras un sismo.")
+Person(brigadista, "Brigadista", "Atiende las zonas asignadas y actualiza su estado.")
+Person(coordinador, "Coordinador", "Revisa el mapa de daños, prioriza zonas y asigna brigadas.")
+
+System(sismo, "SismoReporta AQP", "Recibe reportes de daños, prioriza zonas y asigna brigadas.")
+
+System_Ext(teselas, "Servicio de teselas de mapa", "Mapa base: OpenStreetMap o un proveedor de teselas.")
+
+Rel(ciudadano, sismo, "Envía reportes de daños con foto y ubicación", "HTTPS")
+Rel(brigadista, sismo, "Consulta su asignación y marca su estado", "HTTPS")
+Rel(coordinador, sismo, "Revisa el mapa y asigna brigadas", "HTTPS")
+Rel(sismo, teselas, "Obtiene el mapa base", "HTTPS/PNG")
+
+SHOW_LEGEND()
+@enduml

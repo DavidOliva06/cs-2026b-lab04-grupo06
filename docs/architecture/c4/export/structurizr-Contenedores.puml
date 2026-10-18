@@ -1,0 +1,43 @@
+@startuml
+title <size:24>Container View: SismoReporta AQP</size>\n<size:24>Diagrama de contenedores de SismoReporta AQP.</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo.", $tags="", $link="")
+Person(Brigadista, "Brigadista", $descr="Atiende las zonas asignadas y actualiza su estado.", $tags="", $link="")
+Person(Coordinador, "Coordinador", $descr="Revisa el mapa de daños, prioriza zonas y asigna brigadas.", $tags="", $link="")
+System(Serviciodeteselasdemapa, "Servicio de teselas de mapa", $descr="Mapa base: OpenStreetMap o un proveedor de teselas.", $tags="", $link="")
+
+System_Boundary("SismoReportaAQP_boundary", "SismoReporta AQP", $tags="") {
+  Container(SismoReportaAQP.Worker, "Worker", $techn="Python", $descr="Procesa fotos y recalcula la priorización de forma periódica.", $tags="", $link="")
+  ContainerDb(SismoReportaAQP.Basededatos, "Base de datos", $techn="PostgreSQL", $descr="Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos.", $tags="", $link="")
+  ContainerDb(SismoReportaAQP.Almacenamientodefotos, "Almacenamiento de fotos", $techn="Sistema de archivos", $descr="Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado.", $tags="", $link="")
+  Container(SismoReportaAQP.Aplicaciónwebprogresiva, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión.", $tags="", $link="")
+  Container(SismoReportaAQP.API, "API", $techn="Python", $descr="Monolito modular: ingesta idempotente, mapa, priorización y brigadas.", $tags="", $link="")
+}
+
+Rel(Ciudadano, SismoReportaAQP.Aplicaciónwebprogresiva, "Envía reportes de daños con foto y ubicación", $techn="HTTPS", $tags="", $link="")
+Rel(Brigadista, SismoReportaAQP.Aplicaciónwebprogresiva, "Consulta su asignación y marca su estado", $techn="HTTPS", $tags="", $link="")
+Rel(Coordinador, SismoReportaAQP.Aplicaciónwebprogresiva, "Revisa el mapa y asigna brigadas", $techn="HTTPS", $tags="", $link="")
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, SismoReportaAQP.API, "Envía reportes y consultas, a través del proxy inverso", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, Serviciodeteselasdemapa, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="", $link="")
+Rel(SismoReportaAQP.API, SismoReportaAQP.Basededatos, "Lee y escribe datos", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.API, SismoReportaAQP.Almacenamientodefotos, "Guarda la foto original", $techn="E/S de archivos", $tags="", $link="")
+Rel(SismoReportaAQP.Worker, SismoReportaAQP.Basededatos, "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas", $techn="SQL/TCP", $tags="", $link="")
+Rel(SismoReportaAQP.Worker, SismoReportaAQP.Almacenamientodefotos, "Redimensiona las fotos y elimina los metadatos EXIF", $techn="E/S de archivos", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

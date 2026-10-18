@@ -1,0 +1,83 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Deployment View: SismoReporta AQP - Producción"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 47 ["Celular del ciudadano o del brigadista"]
+      style 47 fill:#ffffff,stroke:#444444,color:#444444
+
+      subgraph 48 ["Navegador web"]
+        style 48 fill:#ffffff,stroke:#444444,color:#444444
+
+        49["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+        style 49 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      end
+
+    end
+
+    subgraph 50 ["Computadora del coordinador"]
+      style 50 fill:#ffffff,stroke:#444444,color:#444444
+
+      subgraph 51 ["Navegador web"]
+        style 51 fill:#ffffff,stroke:#444444,color:#444444
+
+        52["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+        style 52 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      end
+
+    end
+
+    subgraph 53 ["DigitalOcean"]
+      style 53 fill:#ffffff,stroke:#444444,color:#444444
+
+      subgraph 54 ["Droplet Basic"]
+        style 54 fill:#ffffff,stroke:#444444,color:#444444
+
+        55["<div style='font-weight: bold'>Proxy inverso</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node]</div><div style='font-size: 80%; margin-top:10px'>Termina TLS 1.2 o superior<br />(QA-03), recibe las subidas<br />lentas y limita las<br />peticiones.</div>"]
+        style 55 fill:#ffffff,stroke:#b2b2b2,color:#000000
+        subgraph 56 ["Entorno de ejecución Python"]
+          style 56 fill:#ffffff,stroke:#444444,color:#444444
+
+          57["<div style='font-weight: bold'>API</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Monolito modular: ingesta<br />idempotente, mapa,<br />priorización y brigadas.</div>"]
+          style 57 fill:#438dd5,stroke:#2e6295,color:#ffffff
+          60["<div style='font-weight: bold'>Worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Procesa fotos y recalcula la<br />priorización de forma<br />periódica.</div>"]
+          style 60 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        end
+
+        subgraph 61 ["Servidor PostgreSQL"]
+          style 61 fill:#ffffff,stroke:#444444,color:#444444
+
+          62[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos.</div>")]
+          style 62 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        end
+
+        subgraph 65 ["Volumen de bloques"]
+          style 65 fill:#ffffff,stroke:#444444,color:#444444
+
+          66[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+          style 66 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        end
+
+      end
+
+    end
+
+    subgraph 69 ["Proveedor de teselas"]
+      style 69 fill:#ffffff,stroke:#6b6b6b,color:#ffffff
+
+      70["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
+      style 70 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    end
+
+    57-. "<div>Lee y escribe datos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->62
+    60-. "<div>Toma trabajos con SKIP LOCKED<br />y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->62
+    57-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->66
+    60-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->66
+    49-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->70
+    52-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->70
+    49-. "<div>Envía reportes y consultas</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->55
+    52-. "<div>Envía consultas y<br />asignaciones</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->55
+    55-. "<div>Reenvía las peticiones</div><div style='font-size: 70%'>[HTTP/JSON local]</div>" .->57
+
+  end

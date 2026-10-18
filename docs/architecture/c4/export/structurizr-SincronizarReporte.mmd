@@ -1,0 +1,46 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Dynamic View: SismoReporta AQP - API"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+
+    subgraph 4 ["SismoReporta AQP"]
+      style 4 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 6 ["API"]
+        style 6 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        7["<div style='font-weight: bold'>Compartido</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Tipos comunes Ubicacion y<br />Zona, y el puerto<br />ColaTrabajos.</div>"]
+        style 7 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        8["<div style='font-weight: bold'>Reportes</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python]</div><div style='font-size: 80%; margin-top:10px'>Ingesta idempotente por UUID<br />(ServicioIngesta) y puertos<br />AlmacenServidorReportes y<br />ConsultaReportes.</div>"]
+        style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      end
+
+      13[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos.</div>")]
+      style 13 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      14[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+      style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      5["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+      style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+    5["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+    style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    13[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos.</div>")]
+    style 13 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    14[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+    style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+
+    1-. "<div>1. Registra el reporte con<br />foto y ubicación; sin señal<br />queda en la cola local</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    5-. "<div>2. Al recuperar la señal,<br />envía cada reporte pendiente<br />con su UUID</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->8
+    8-. "<div>3. Guarda el reporte solo si<br />su UUID no existe<br />(guardarSiNoExiste)</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+    8-. "<div>4. Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->14
+    8-. "<div>5. Encola el procesamiento de<br />la foto mediante ColaTrabajos</div><div style='font-size: 70%'>[Llamada en proceso]</div>" .->7
+    7-. "<div>6. Inserta el trabajo en la<br />misma transacción que el<br />reporte</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
+
+  end

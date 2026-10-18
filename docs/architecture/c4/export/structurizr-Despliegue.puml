@@ -1,0 +1,69 @@
+@startuml
+title <size:24>Deployment View: SismoReporta AQP - Producción</size>\n<size:24>Despliegue en el entorno Producción.</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Deployment>
+
+Deployment_Node(Producción.Celulardelciudadanoodelbrigadista, "Celular del ciudadano o del brigadista", $type="Android", $descr="Celular de gama baja con red móvil intermitente (R-05).", $tags="", $link="") {
+  Deployment_Node(Producción.Celulardelciudadanoodelbrigadista.Navegadorweb, "Navegador web", $type="Chrome para Android", $descr="Ejecuta la PWA y guarda la cola local en IndexedDB.", $tags="", $link="") {
+    Container(Producción.Celulardelciudadanoodelbrigadista.Navegadorweb.Aplicaciónwebprogresiva_1, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión.", $tags="", $link="")
+  }
+
+}
+
+Deployment_Node(Producción.Computadoradelcoordinador, "Computadora del coordinador", $type="Windows o Linux", $descr="Equipo de oficina de Defensa Civil.", $tags="", $link="") {
+  Deployment_Node(Producción.Computadoradelcoordinador.Navegadorweb, "Navegador web", $type="Navegador moderno (Chrome, Edge o Firefox)", $descr="Ejecuta el panel del coordinador de la PWA.", $tags="", $link="") {
+    Container(Producción.Computadoradelcoordinador.Navegadorweb.Aplicaciónwebprogresiva_1, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión.", $tags="", $link="")
+  }
+
+}
+
+Deployment_Node(Producción.DigitalOcean, "DigitalOcean", $type="Región Nueva York (NYC3)", $descr="Proveedor de nube. Región fuera de la zona sísmica de Arequipa.", $tags="", $link="") {
+  Deployment_Node(Producción.DigitalOcean.DropletBasic, "Droplet Basic", $type="Ubuntu 24.04 LTS", $descr="1 vCPU, 2 GiB de RAM, 50 GiB de SSD y 2 000 GiB de transferencia. US$ 12/mes más respaldos diarios (30 %): US$ 3,60/mes.", $tags="", $link="") {
+    Deployment_Node(Producción.DigitalOcean.DropletBasic.Proxyinverso, "Proxy inverso", $type="", $descr="Termina TLS 1.2 o superior (QA-03), recibe las subidas lentas y limita las peticiones.", $tags="", $link="")
+    Deployment_Node(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython, "Entorno de ejecución Python", $type="Python 3.12 y systemd", $descr="Dos servicios de systemd con un entorno virtual compartido, sin Docker.", $tags="", $link="") {
+      Container(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.API_1, "API", $techn="Python", $descr="Monolito modular: ingesta idempotente, mapa, priorización y brigadas.", $tags="", $link="")
+      Container(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.Worker_1, "Worker", $techn="Python", $descr="Procesa fotos y recalcula la priorización de forma periódica.", $tags="", $link="")
+    }
+
+    Deployment_Node(Producción.DigitalOcean.DropletBasic.ServidorPostgreSQL, "Servidor PostgreSQL", $type="PostgreSQL 16", $descr="Instalado en el mismo droplet; no es un servicio administrado (R-03).", $tags="", $link="") {
+      ContainerDb(Producción.DigitalOcean.DropletBasic.ServidorPostgreSQL.Basededatos_1, "Base de datos", $techn="PostgreSQL", $descr="Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos.", $tags="", $link="")
+    }
+
+    Deployment_Node(Producción.DigitalOcean.DropletBasic.Volumendebloques, "Volumen de bloques", $type="DigitalOcean Volumes, ext4", $descr="100 GiB para fotos, separado del disco del sistema. US$ 10/mes.", $tags="", $link="") {
+      ContainerDb(Producción.DigitalOcean.DropletBasic.Volumendebloques.Almacenamientodefotos_1, "Almacenamiento de fotos", $techn="Sistema de archivos", $descr="Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado.", $tags="", $link="")
+    }
+
+  }
+
+}
+
+Deployment_Node(Producción.Proveedordeteselas, "Proveedor de teselas", $type="Internet", $descr="Servicio externo de mapas, no desplegado por el equipo.", $tags="", $link="") {
+  System(Producción.Proveedordeteselas.Serviciodeteselasdemapa_1, "Servicio de teselas de mapa", $descr="Mapa base: OpenStreetMap o un proveedor de teselas.", $tags="", $link="")
+}
+
+Rel(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.API_1, Producción.DigitalOcean.DropletBasic.ServidorPostgreSQL.Basededatos_1, "Lee y escribe datos", $techn="SQL/TCP", $tags="", $link="")
+Rel(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.Worker_1, Producción.DigitalOcean.DropletBasic.ServidorPostgreSQL.Basededatos_1, "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas", $techn="SQL/TCP", $tags="", $link="")
+Rel(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.API_1, Producción.DigitalOcean.DropletBasic.Volumendebloques.Almacenamientodefotos_1, "Guarda la foto original", $techn="E/S de archivos", $tags="", $link="")
+Rel(Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.Worker_1, Producción.DigitalOcean.DropletBasic.Volumendebloques.Almacenamientodefotos_1, "Redimensiona las fotos y elimina los metadatos EXIF", $techn="E/S de archivos", $tags="", $link="")
+Rel(Producción.Celulardelciudadanoodelbrigadista.Navegadorweb.Aplicaciónwebprogresiva_1, Producción.Proveedordeteselas.Serviciodeteselasdemapa_1, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="", $link="")
+Rel(Producción.Computadoradelcoordinador.Navegadorweb.Aplicaciónwebprogresiva_1, Producción.Proveedordeteselas.Serviciodeteselasdemapa_1, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="", $link="")
+Rel(Producción.Celulardelciudadanoodelbrigadista.Navegadorweb.Aplicaciónwebprogresiva_1, Producción.DigitalOcean.DropletBasic.Proxyinverso, "Envía reportes y consultas", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(Producción.Computadoradelcoordinador.Navegadorweb.Aplicaciónwebprogresiva_1, Producción.DigitalOcean.DropletBasic.Proxyinverso, "Envía consultas y asignaciones", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(Producción.DigitalOcean.DropletBasic.Proxyinverso, Producción.DigitalOcean.DropletBasic.EntornodeejecuciónPython.API_1, "Reenvía las peticiones", $techn="HTTP/JSON local", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
