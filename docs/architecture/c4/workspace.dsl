@@ -122,6 +122,16 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             include *
             autolayout lr
         }
+        
+         dynamic sismo.api "SincronizarReporte" "HU-01: enviar un reporte sin señal y sincronizarlo." {
+            ciudadano -> sismo.pwa "Registra el reporte con foto y ubicación; sin señal queda en la cola local"
+            sismo.pwa -> sismo.api.reportes "Al recuperar la señal, envía cada reporte pendiente con su UUID"
+            sismo.api.reportes -> sismo.bd "Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)"
+            sismo.api.reportes -> sismo.fotos "Guarda la foto original"
+            sismo.api.reportes -> sismo.api.compartido "Encola el procesamiento de la foto mediante ColaTrabajos"
+            sismo.api.compartido -> sismo.bd "Inserta el trabajo en la misma transacción que el reporte"
+            autolayout lr
+        }
 
         deployment sismo "Producción" "Despliegue" "Despliegue en el entorno Producción." {
             include *

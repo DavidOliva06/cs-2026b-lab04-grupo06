@@ -1,0 +1,6 @@
+# Secuencia UML frente a vista dinámica C4
+
+La secuencia UML (`secuencia-reporte.puml`) muestra lo que la vista dinámica omite: la rama de error por consentimiento no aceptado (`alt`), el ciclo por cada reporte pendiente (`loop`), la condición de confirmación (`opt`), los mensajes de retorno y las clases internas de la PWA (`ControladorReportes`, `ServicioReportes`, `AlmacenLocalReportes`) con las operaciones y parámetros exactos que se invocan.
+La vista dinámica `SincronizarReporte` solo numera los pasos del camino feliz entre contenedores y componentes, pero deja ver a qué almacenes llega el reporte (PostgreSQL y el disco de fotos) y que el trabajo se encola en la misma transacción.
+La secuencia sirve a los desarrolladores que implementan y prueban la HU-01, porque cada mensaje corresponde a una operación del diagrama de clases.
+La vista dinámica sirve a arquitectos, operadores y nuevos integrantes del equipo, que necesitan entender qué partes del sistema recorre el flujo sin entrar al código.
