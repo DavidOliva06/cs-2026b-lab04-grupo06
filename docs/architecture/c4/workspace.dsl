@@ -85,25 +85,49 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
         produccion = deploymentEnvironment "Producción" {
 
-            dispositivo = deploymentNode "Dispositivo del usuario" "Celular de gama baja o computadora, con red móvil intermitente." "Navegador web" {
-                pwa = containerInstance sismo.pwa
+            # Costo mensual (R-03, US$ 20-30): droplet US$ 12 + respaldos diarios US$ 3,60 + volumen US$ 10 = US$ 25,60.
+            # No se usa Docker: el entorno de ejecución son procesos de Python administrados por systemd.
+
+            celular = deploymentNode "Celular del ciudadano o del brigadista" "Celular de gama baja con red móvil intermitente (R-05)." "Android" {
+                navegador = deploymentNode "Navegador web" "Ejecuta la PWA y guarda la cola local en IndexedDB." "Chrome para Android" {
+                    pwa = containerInstance sismo.pwa
+                }
             }
 
-            # Un solo servidor (ADR-001, R-03). Los nodos son el servidor y sus procesos, no contenedores Docker.
-            servidor = deploymentNode "Servidor único en la nube" "Servidor de bajo costo, US$ 20-30 al mes." "Servidor virtual" {
-                proxy = infrastructureNode "Proxy inverso" "Termina TLS, recibe las subidas lentas y limita las peticiones."
-                api = containerInstance sismo.api
-                worker = containerInstance sismo.worker
-                bd = containerInstance sismo.bd
-                fotos = containerInstance sismo.fotos
+            computadora = deploymentNode "Computadora del coordinador" "Equipo de oficina de Defensa Civil." "Windows o Linux" {
+                navegador = deploymentNode "Navegador web" "Ejecuta el panel del coordinador de la PWA." "Navegador moderno (Chrome, Edge o Firefox)" {
+                    pwa = containerInstance sismo.pwa
+                }
+            }
+
+            nube = deploymentNode "DigitalOcean" "Proveedor de nube. Región fuera de la zona sísmica de Arequipa." "Región Nueva York (NYC3)" {
+
+                droplet = deploymentNode "Droplet Basic" "1 vCPU, 2 GiB de RAM, 50 GiB de SSD y 2 000 GiB de transferencia. US$ 12/mes más respaldos diarios (30 %): US$ 3,60/mes." "Ubuntu 24.04 LTS" {
+
+                    proxy = infrastructureNode "Proxy inverso" "Termina TLS 1.2 o superior (QA-03), recibe las subidas lentas y limita las peticiones."
+
+                    python = deploymentNode "Entorno de ejecución Python" "Dos servicios de systemd con un entorno virtual compartido, sin Docker." "Python 3.12 y systemd" {
+                        api = containerInstance sismo.api
+                        worker = containerInstance sismo.worker
+                    }
+
+                    postgres = deploymentNode "Servidor PostgreSQL" "Instalado en el mismo droplet; no es un servicio administrado (R-03)." "PostgreSQL 16" {
+                        bd = containerInstance sismo.bd
+                    }
+
+                    volumen = deploymentNode "Volumen de bloques" "100 GiB para fotos, separado del disco del sistema. US$ 10/mes." "DigitalOcean Volumes, ext4" {
+                        fotos = containerInstance sismo.fotos
+                    }
+                }
             }
 
             externo = deploymentNode "Proveedor de teselas" "Servicio externo de mapas, no desplegado por el equipo." "Internet" "Externo" {
                 teselas = softwareSystemInstance teselas
             }
 
-            dispositivo.pwa -> servidor.proxy "Envía reportes y consultas" "HTTPS/JSON"
-            servidor.proxy -> servidor.api "Reenvía las peticiones" "HTTP/JSON local"
+            celular.navegador.pwa -> nube.droplet.proxy "Envía reportes y consultas" "HTTPS/JSON"
+            computadora.navegador.pwa -> nube.droplet.proxy "Envía consultas y asignaciones" "HTTPS/JSON"
+            nube.droplet.proxy -> nube.droplet.python.api "Reenvía las peticiones" "HTTP/JSON local"
         }
     }
 
@@ -135,7 +159,8 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
         deployment sismo "Producción" "Despliegue" "Despliegue en el entorno Producción." {
             include *
-            exclude "produccion.dispositivo.pwa -> produccion.servidor.api"
+            exclude "produccion.celular.navegador.pwa -> produccion.nube.droplet.python.api"
+            exclude "produccion.computadora.navegador.pwa -> produccion.nube.droplet.python.api"
             autolayout lr
         }
 
