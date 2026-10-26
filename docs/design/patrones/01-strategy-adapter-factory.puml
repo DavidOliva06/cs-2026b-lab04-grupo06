@@ -1,0 +1,78 @@
+@startuml
+title Patrones Strategy + Adapter + Factory - flujo HU-01
+
+skinparam classAttributeIconSize 0
+
+class ServicioReportes <<Context>> {
+  + crear_reporte(ciudadano, foto, ubicacion) : Reporte
+  + sincronizar_pendientes() : int
+}
+class ServicioIngesta <<Context>> {
+  + recibir(reporte: Reporte) : bool
+  + contar_reportes() : int
+}
+
+interface AlmacenLocalReportes <<Strategy>> {
+  + guardar(reporte: Reporte) : None
+  + buscar_por_estado(estado: str) : list[Reporte]
+}
+interface PuertoEnvioReportes <<Strategy>> {
+  + enviar(reporte: Reporte) : bool
+}
+interface AlmacenServidorReportes <<Strategy>> {
+  + guardar_si_no_existe(reporte: Reporte) : bool
+  + contar() : int
+}
+
+class AdaptadorIndexedDB <<Adapter>> {
+  + guardar(reporte: Reporte) : None
+  + buscar_por_estado(estado: str) : list[Reporte]
+}
+class AdaptadorEnvioHttp <<Adapter>> {
+  + enviar(reporte: Reporte) : bool
+}
+class AdaptadorPostgres <<Adapter>> {
+  + guardar_si_no_existe(reporte: Reporte) : bool
+  + contar() : int
+}
+
+class AlmacenIndexedDB <<Adaptee>> {
+  + put(almacen: str, clave: str, valor: dict) : None
+  + get_all(almacen: str) : list[dict]
+}
+class ClienteHttp <<Adaptee>> {
+  + post(url: str, cuerpo_json: str) : RespuestaHttp
+}
+class ConexionPostgres <<Adaptee>> {
+  + cursor() : Cursor
+  + commit() : None
+}
+
+class FabricaEstrategias <<Factory>> {
+  + registrar(puerto: type, nombre: str, constructor: Callable) : None
+  + crear(puerto: type, nombre: str) : objeto del puerto
+}
+
+ServicioReportes "1" --> "1" AlmacenLocalReportes : almacen_local
+ServicioReportes "1" --> "1" PuertoEnvioReportes : envio
+ServicioIngesta "1" --> "1" AlmacenServidorReportes : almacen
+ServicioReportes ..> FabricaEstrategias : pide la estrategia
+ServicioIngesta ..> FabricaEstrategias : pide la estrategia
+
+AdaptadorIndexedDB ..|> AlmacenLocalReportes
+AdaptadorEnvioHttp ..|> PuertoEnvioReportes
+AdaptadorPostgres ..|> AlmacenServidorReportes
+
+AdaptadorIndexedDB "1" --> "1" AlmacenIndexedDB : traduce a put / get_all
+AdaptadorEnvioHttp "1" --> "1" ClienteHttp : traduce a post + JSON
+AdaptadorPostgres "1" --> "1" ConexionPostgres : traduce a SQL
+
+FabricaEstrategias ..> AdaptadorIndexedDB : crea "indexeddb"
+FabricaEstrategias ..> AdaptadorEnvioHttp : crea "http"
+FabricaEstrategias ..> AdaptadorPostgres : crea "postgres"
+
+note bottom of FabricaEstrategias
+  Registro creado por fabrica_por_defecto():
+  no es global ni Singleton.
+end note
+@enduml

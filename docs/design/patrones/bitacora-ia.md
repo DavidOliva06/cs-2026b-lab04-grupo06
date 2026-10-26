@@ -1,0 +1,33 @@
+# Bitácora de uso de IA - SismoReporta AQP (Laboratorio 06: refactorización y patrones)
+
+- Herramienta: Claude (asistente de IA de Anthropic)
+- Autor: Oliva Valdivia David Alexander
+- Periodo: 2026-10-25
+
+## Interacciones
+
+| # | Objetivo | Prompt (resumen) | Respuesta de la IA | Verificación y ajuste |
+|---|---|---|---|---|
+| 1 | Versión ingenua del flujo crítico | "Implemente una versión ingenua del flujo crítico en servicio.py, usando el diagrama de secuencia. Simule los servicios externos en externos.py con interfaces distintas entre sí." | `servicio.py` acoplado a tres simulaciones con interfaces distintas (IndexedDB, HTTP y PostgreSQL), con cada defecto marcado como `INGENUO:`. | Se ejecutó la demostración, que comprueba los cuatro criterios de la HU-01 con `assert`. Se probó en Python 3.11 y 3.13, no en 3.10. La IA mantuvo los nombres antiguos del diagrama (`PENDIENTE_DE_ENVIO`, `marcar_enviado`) y lo advirtió. |
+| 2 | Pruebas de caracterización | Ejemplo del fixture parametrizado `antes.servicio` / `despues.servicio`, con un mínimo de 8 pruebas. | 12 pruebas (24 ejecuciones) y la estructura `antes/`, `despues/`, `tests/`, con el contrato que la versión después debe mantener. | Para comprobar que las pruebas sirven, se quitó el `ON CONFLICT` en una copia de `despues`: fallaron 4 pruebas, solo las de la versión después. |
+| 3 | Olores de código y decisión de patrones | "Actúa como revisor experto en refactorización (Fowler) y patrones GoF... no uses Singleton." Luego: tabla de decisiones con al menos un rechazo. | 9 olores con su patrón, principio SOLID y costo. Solo Adapter quedó justificado; se rechazaron State, Observer, Decorator, Singleton, Abstract Factory, Command y Proxy. | Los números de línea de radon no coincidían con el archivo de la IA (13 líneas de diferencia por el docstring); se citaron los de radon. Más adelante se aplicaron State, Observer y Decorator, cada uno con una justificación nueva y explícita. |
+| 4 | Strategy + Adapter + Factory | "Aplica ÚNICAMENTE el patrón Strategy + Adapter + Factory... las pruebas deben seguir pasando; sin Singleton ni estado global." | Puertos, un adaptador por servicio externo y `FabricaEstrategias` como registro sin estado global. | **Corrección:** el primer intento de reescribir `despues/servicio.py` no se guardó, pero las pruebas mostraron 24 aprobadas, porque seguían corriendo sobre la copia vieja. Se detectó al revisar el archivo después de la ejecución; se reescribió y se repitió la prueba de mutación sobre `adaptadores.py` (4 fallas) para confirmar que las pruebas ejercitaban el código nuevo. |
+| 5 | Patrón State | "Cree una clase base que prohíba todas las transiciones y una subclase por estado que redefina solo las permitidas." | `estados.py` con la base `EstadoReporte`, seis estados concretos y el contexto `CicloReporte`, más 41 pruebas (las 6 transiciones del diagrama y las 30 prohibidas). | No se conectó a `servicio.py`, porque cambiaría los estados que fijan las pruebas de caracterización. Quedó pendiente alinear `enviar()` y `recibir()` con `marcarRecibido()` del diagrama de clases. |
+| 6 | Observer y Decorator | "Reemplace las notificaciones a mano por un Observer con al menos 2 suscriptores. Extraiga una responsabilidad transversal a un Decorator." | Observer con `VistaConsola` y `ContadorPendientes`; Decorator `EnvioConRegistro` para registrar cada envío; 7 pruebas. | La prueba de caracterización del controlador confirmó que los mensajes mostrados al ciudadano siguieron siendo idénticos. Se descartó un Decorator de reintentos porque cambiaba el comportamiento (la prueba espera `[0, 0, 1]`). |
+| 7 | Aislar el componente de IA | "Agregue un Decorator de caché y una cadena de 2 o más guardrails adecuados a su dominio. Pruebe con un LLM simulado." | Puerto `ClasificadorDanos`, adaptador del LLM, caché con capacidad limitada y tres guardrails (formato, no declarar segura una estructura, sin datos personales); 18 pruebas. | Las respuestas inválidas se bloquean y el reporte pasa a revisión humana, sin descartarse. Limitación registrada: los guardrails con expresiones regulares pueden dar falsos positivos y dejar pasar frases dichas de otra forma. |
+| 8 | Métricas y trade-off | "Complete metricas.md con una tabla de radon antes y después... y al menos un patrón que decidieron NO aplicar." | `metricas.md` con complejidad, SLOC, comparación por método, trade-off y cuatro patrones no aplicados. | **Corrección:** la IA escribió 36 bloques para la máquina de estados; al sumar 67 + 25 + 36 no daba el total de 125 que informa radon, y se corrigió a 33. La complejidad promedio subió de 1,67 a 1,88, y se documentó como costo, no como mejora. |
+| 9 | Diagramas de patrones y verificación con pyreverse | "Elabore un diagrama de clases PlantUML por cada patrón aplicado... actualice clases.puml y verifique con pyreverse." | Cinco diagramas con estereotipos de rol, `clases.puml` actualizado y `verificar_clases.py`, que compara clases, métodos y atributos con la salida de pyreverse. | El verificador dio 0 diferencias en 40 clases. Para comprobar que detecta errores, se modificó una copia del diagrama y reportó las 5 diferencias. **Corrección:** el PNG de `clases.puml` salía cortado en el límite de 4096 px de PlantUML; se cambió la orientación a `left to right direction`. |
+
+## Lecciones aprendidas
+
+- **Que las pruebas pasen no basta:** en la interacción 4 las pruebas pasaron sobre un archivo que no había cambiado. Después de cada refactor hay que confirmar que se probó el código nuevo, por ejemplo con una mutación deliberada.
+- **Las pruebas de caracterización protegen el refactor:** detectaron que un Decorator de reintentos habría cambiado el comportamiento y confirmaron que el Observer conservó los mensajes exactos.
+- **Un patrón necesita un olor concreto:** la IA rechazó State, Observer y Decorator cuando no había motivo, y los aplicó solo cuando apareció una necesidad real (seis estados, un segundo suscriptor, el registro de envíos).
+- **Hay que revisar las cifras de la IA:** el conteo de bloques en las métricas tenía un error que solo se vio al comprobar la suma.
+- **Verificar los diagramas con herramientas:** pyreverse y el verificador permiten comprobar que el diagrama coincide con el código en lugar de confiar en la revisión visual.
+
+## Pendientes
+
+- Alinear el flujo de envío (`PENDIENTE_DE_ENVIO` / `ENVIADO`) con la máquina de seis estados, actualizando las pruebas de caracterización de forma deliberada.
+- Corregir el defecto heredado del diagrama de secuencia: la foto y la ubicación llegan antes de comprobar el consentimiento.
+- Probar el código en Python 3.10, la versión que pide el laboratorio.

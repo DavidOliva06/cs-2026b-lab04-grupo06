@@ -1,0 +1,30 @@
+@startuml
+title Patrón Decorator - registro de cada envío
+
+skinparam classAttributeIconSize 0
+
+interface PuertoEnvioReportes <<Component>> {
+  + enviar(reporte: Reporte) : bool
+}
+class AdaptadorEnvioHttp <<ConcreteComponent>> {
+  + enviar(reporte: Reporte) : bool
+}
+class EnvioConRegistro <<Decorator>> {
+  + enviar(reporte: Reporte) : bool
+}
+class ServicioReportes <<Client>> {
+  + sincronizar_pendientes() : int
+}
+class Logger <<externo>>
+
+AdaptadorEnvioHttp ..|> PuertoEnvioReportes
+EnvioConRegistro ..|> PuertoEnvioReportes
+EnvioConRegistro "1" o--> "1" PuertoEnvioReportes : envuelve
+EnvioConRegistro --> Logger : registra resultado y duración
+ServicioReportes "1" --> "1" PuertoEnvioReportes : envio
+
+note bottom of EnvioConRegistro
+  Devuelve lo mismo que el envío envuelto.
+  La fábrica lo entrega como "http_con_registro".
+end note
+@enduml

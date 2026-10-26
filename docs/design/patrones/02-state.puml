@@ -1,0 +1,61 @@
+@startuml
+title Patrón State - ciclo de vida del Reporte
+
+skinparam classAttributeIconSize 0
+
+class CicloReporte <<Context>> {
+  + estado : EstadoReporte
+  + encolar() : None
+  + enviar() : None
+  + recibir() : None
+  + verificar() : None
+  + rechazar() : None
+  + marcar_atendido() : None
+}
+
+class EstadoReporte <<State>> {
+  + encolar(reporte) : EstadoReporte
+  + enviar(reporte) : EstadoReporte
+  + recibir(reporte) : EstadoReporte
+  + verificar(reporte) : EstadoReporte
+  + rechazar(reporte) : EstadoReporte
+  + marcar_atendido(reporte) : EstadoReporte
+}
+note right of EstadoReporte
+  La clase base prohíbe todas las
+  transiciones (TransicionInvalida).
+end note
+
+class Borrador <<ConcreteState>> {
+  + encolar(reporte) : EstadoReporte
+}
+class Encolado <<ConcreteState>> {
+  + enviar(reporte) : EstadoReporte
+  + recibir(reporte) : EstadoReporte
+}
+class Recibido <<ConcreteState>> {
+  + verificar(reporte) : EstadoReporte
+  + rechazar(reporte) : EstadoReporte
+}
+class Verificado <<ConcreteState>> {
+  + marcar_atendido(reporte) : EstadoReporte
+}
+class Atendido <<ConcreteState>> {
+  + es_final = True
+}
+class Rechazado <<ConcreteState>> {
+  + es_final = True
+}
+class Reporte
+class TransicionInvalida <<exception>>
+
+CicloReporte "0..*" --> "1" EstadoReporte : estado actual
+CicloReporte "0..*" --> "1" Reporte : reporte
+Borrador --|> EstadoReporte
+Encolado --|> EstadoReporte
+Recibido --|> EstadoReporte
+Verificado --|> EstadoReporte
+Atendido --|> EstadoReporte
+Rechazado --|> EstadoReporte
+EstadoReporte ..> TransicionInvalida : lanza
+@enduml

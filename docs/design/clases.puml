@@ -1,95 +1,280 @@
 @startuml
-title HU-01: Enviar un reporte sin señal y sincronizarlo - Diagrama de clases
+title SismoReporta AQP - Diagrama de clases (versión después, Lab 06)
 
-enum EstadoReporte {
-  BORRADOR
-  ENCOLADO
-  RECIBIDO
-  VERIFICADO
-  ATENDIDO
-  RECHAZADO
+' Actualizado desde el Lab 05 para que coincida con src/modulo/despues/.
+' Muestra solo los miembros públicos, igual que pyreverse por defecto.
+' Se verifica con docs/design/verificar_clases.py contra la salida de pyreverse.
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+' Orientación horizontal para que la imagen no supere el límite de 4096 px de PlantUML.
+left to right direction
+
+package "modelo" {
+  class Ciudadano {
+    + id : str
+    + consentimiento_aceptado : bool
+    + puede_reportar() : bool
+  }
+  class Reporte {
+    + id : str
+    + ciudadano_id : str
+    + foto : bytes
+    + ubicacion : tuple[float, float]
+    + estado : str
+    + fecha_envio : datetime [0..1]
+    + marcar_enviado(fecha: datetime) : None
+  }
+  note right of Reporte
+    estado vale PENDIENTE_DE_ENVIO o ENVIADO en el flujo de envío.
+    El ciclo completo de seis estados vive en CicloReporte (patrón State).
+  end note
 }
 
-class Ciudadano {
-  ' Supuesto: se identifica al ciudadano con un id para asociarle sus reportes.
-  - id: UUID
-  + puedeReportar(): Boolean
+package "puertos" {
+  interface AlmacenLocalReportes <<Strategy>> {
+    + {abstract} guardar(reporte: Reporte) : None
+    + {abstract} buscar_por_estado(estado: str) : list[Reporte]
+  }
+  interface PuertoEnvioReportes <<Strategy>> {
+    + {abstract} enviar(reporte: Reporte) : bool
+  }
+  interface AlmacenServidorReportes <<Strategy>> {
+    + {abstract} guardar_si_no_existe(reporte: Reporte) : bool
+    + {abstract} contar() : int
+  }
 }
 
-class Consentimiento {
-  ' Si fechaAceptacion tiene valor, el consentimiento está aceptado.
-  - fechaAceptacion: DateTime [0..1]
-  + aceptar(fecha: DateTime): void
-  + estaAceptado(): Boolean
+package "adaptadores" {
+  class AdaptadorIndexedDB <<Adapter>> {
+    + ALMACEN : str
+    + guardar(reporte: Reporte) : None
+    + buscar_por_estado(estado: str) : list[Reporte]
+  }
+  class AdaptadorEnvioHttp <<Adapter>> {
+    + enviar(reporte: Reporte) : bool
+  }
+  class AdaptadorPostgres <<Adapter>> {
+    + guardar_si_no_existe(reporte: Reporte) : bool
+    + contar() : int
+  }
 }
 
-class Reporte {
-  ' Supuesto: el id se genera en el celular para que el servidor detecte reenvíos (criterio 3).
-  ' BORRADOR y ENCOLADO ocurren en el celular; los demás estados, en el servidor.
-  - id: UUID
-  - fechaCreacion: DateTime
-  - fechaRecepcion: DateTime [0..1]
-  + estaEncolado(): Boolean
-  + encolar(): void
-  + marcarRecibido(fecha: DateTime): void
-  ' Supuesto: verificar, rechazar y marcarAtendido salen del diagrama de estados, no de la HU-01.
-  + verificar(): void
-  + rechazar(): void
-  + marcarAtendido(): void
+package "fabrica" {
+  class FabricaEstrategias <<Factory>> {
+    + registrar(puerto: type[P], nombre: str, constructor: Callable) : None
+    + crear(puerto: type[P], nombre: str) : P
+  }
 }
 
-class Foto {
-  ' Supuesto: la foto se guarda como bytes junto con su tipo de archivo.
-  - contenido: Byte[]
-  - tipoMime: String
+package "decoradores" {
+  class EnvioConRegistro <<Decorator>> {
+    + enviar(reporte: Reporte) : bool
+  }
 }
 
-class Ubicacion {
-  - latitud: Double
-  - longitud: Double
+package "eventos" {
+  interface Observador <<Observer>> {
+    + {abstract} notificar(evento: Evento) : None
+  }
+  class Publicador <<Subject>> {
+    + suscribir(observador: Observador) : None
+    + desuscribir(observador: Observador) : None
+    + publicar(evento: Evento) : None
+  }
+  class ConsentimientoRechazado <<evento>> {
+    + ciudadano_id : str
+  }
+  class ReporteGuardado <<evento>> {
+    + reporte_id : str
+  }
+  class SincronizacionTerminada <<evento>> {
+    + enviados : int
+    + pendientes : int
+  }
 }
 
-' Lado del celular: crea el reporte, lo guarda y lo reenvía (criterios 1, 2 y 4).
-class ServicioReportes {
-  + crearReporte(ciudadano: Ciudadano, foto: Foto, ubicacion: Ubicacion): Reporte
-  + sincronizarPendientes(): void
+package "observadores" {
+  class VistaConsola <<ConcreteObserver>> {
+    + notificar(evento: Evento) : None
+  }
+  class ContadorPendientes <<ConcreteObserver>> {
+    + pendientes : int
+    + notificar(evento: Evento) : None
+  }
 }
 
-' Lado del servidor: recibe el reporte y descarta duplicados (criterio 3).
-class ServicioIngesta {
-  ' Devuelve true si el servidor tiene el reporte, sea nuevo o repetido.
-  + recibir(reporte: Reporte): Boolean
+package "servicio" {
+  class ServicioReportes {
+    + almacen_local : AlmacenLocalReportes
+    + envio : PuertoEnvioReportes
+    + suscribir(observador: Observador) : None
+    + desuscribir(observador: Observador) : None
+    + crear_reporte(ciudadano: Ciudadano, foto: bytes, ubicacion: tuple[float, float]) : Reporte
+    + sincronizar_pendientes() : int
+  }
+  class ServicioIngesta {
+    + almacen : AlmacenServidorReportes
+    + manejar_post(cuerpo_json: str) : RespuestaHttp
+    + recibir(reporte: Reporte) : bool
+    + contar_reportes() : int
+  }
+  class ControladorReportes {
+    + servicio : ServicioReportes
+    + vista : Observador
+    + contador : ContadorPendientes
+    + enviar_reporte(ciudadano: Ciudadano, foto: bytes, ubicacion: tuple[float, float]) : Reporte [0..1]
+    + al_recuperar_conexion() : None
+  }
+  class ConsentimientoNoAceptado <<exception>>
 }
 
-' Puerto de almacenamiento en el celular.
-interface AlmacenLocalReportes <<puerto>> {
-  ' guardar crea el reporte o actualiza el existente.
-  + guardar(reporte: Reporte): void
-  + buscarPorEstado(estado: EstadoReporte): List<Reporte>
+package "estados" {
+  class EstadoReporte <<State>> {
+    + nombre : str
+    + es_final : bool
+    + encolar(reporte: Reporte) : EstadoReporte
+    + enviar(reporte: Reporte) : EstadoReporte
+    + recibir(reporte: Reporte) : EstadoReporte
+    + verificar(reporte: Reporte) : EstadoReporte
+    + rechazar(reporte: Reporte) : EstadoReporte
+    + marcar_atendido(reporte: Reporte) : EstadoReporte
+  }
+  class Borrador <<ConcreteState>> {
+    + nombre : str
+    + encolar(reporte: Reporte) : EstadoReporte
+  }
+  class Encolado <<ConcreteState>> {
+    + nombre : str
+    + enviar(reporte: Reporte) : EstadoReporte
+    + recibir(reporte: Reporte) : EstadoReporte
+  }
+  class Recibido <<ConcreteState>> {
+    + nombre : str
+    + verificar(reporte: Reporte) : EstadoReporte
+    + rechazar(reporte: Reporte) : EstadoReporte
+  }
+  class Verificado <<ConcreteState>> {
+    + nombre : str
+    + marcar_atendido(reporte: Reporte) : EstadoReporte
+  }
+  class Atendido <<ConcreteState>> {
+    + nombre : str
+    + es_final : bool
+  }
+  class Rechazado <<ConcreteState>> {
+    + nombre : str
+    + es_final : bool
+  }
+  class CicloReporte <<Context>> {
+    + reporte : Reporte
+    + estado : EstadoReporte
+    + encolar() : None
+    + enviar() : None
+    + recibir() : None
+    + verificar() : None
+    + rechazar() : None
+    + marcar_atendido() : None
+  }
+  class TransicionInvalida <<exception>>
 }
 
-' Puerto de almacenamiento en el servidor.
-interface AlmacenServidorReportes <<puerto>> {
-  ' Operación atómica: devuelve true si lo guardó y false si ya existía.
-  + guardarSiNoExiste(reporte: Reporte): Boolean
+package "ia" {
+  class Clasificacion {
+    + gravedad : str [0..1]
+    + resumen : str [0..1]
+    + requiere_revision : bool
+    + motivo : str
+  }
+  interface ClasificadorDanos <<Strategy>> {
+    + {abstract} clasificar(descripcion: str) : Clasificacion
+  }
+  class ClasificadorLLM <<Adapter>> {
+    + clasificar(descripcion: str) : Clasificacion
+  }
+  class ClasificadorConCache <<Decorator>> {
+    + clasificar(descripcion: str) : Clasificacion
+  }
+  class SalidaLLM {
+    + texto : str
+    + datos : dict [0..1]
+  }
+  abstract class Guardrail <<Handler>> {
+    + nombre : str
+    + revisar(salida: SalidaLLM) : None
+  }
+  class FormatoValido <<ConcreteHandler>> {
+    + nombre : str
+  }
+  class NoDeclararSeguro <<ConcreteHandler>> {
+    + nombre : str
+    + PATRONES : list
+  }
+  class SinDatosPersonales <<ConcreteHandler>> {
+    + nombre : str
+    + PATRONES : dict
+  }
+  class RespuestaBloqueada <<exception>> {
+    + guardrail : str
+    + motivo : str
+  }
 }
 
-' Puerto de salida del celular hacia el servidor.
-interface PuertoEnvioReportes <<puerto>> {
-  ' Devuelve true si el servidor confirmó que tiene el reporte.
-  + enviar(reporte: Reporte): Boolean
-}
-
-Ciudadano "1" *-- "1" Consentimiento
+' --- Modelo ---
 Ciudadano "1" -- "0..*" Reporte : registra >
-Reporte "1" *-- "1" Foto
-Reporte "1" *-- "1" Ubicacion
-Reporte "0..*" --> "1" EstadoReporte : estado
 
-ServicioReportes ..> Ciudadano : verifica consentimiento
-ServicioReportes ..> Reporte : crea
-ServicioReportes "1" --> "1" AlmacenLocalReportes
-ServicioReportes "1" --> "1" PuertoEnvioReportes
-ServicioIngesta "1" --> "1" AlmacenServidorReportes
-ServicioIngesta ..> Reporte : recibe
+' --- Strategy + Adapter + Factory ---
+AdaptadorIndexedDB ..|> AlmacenLocalReportes
+AdaptadorEnvioHttp ..|> PuertoEnvioReportes
+AdaptadorPostgres ..|> AlmacenServidorReportes
+ServicioReportes "1" --> "1" AlmacenLocalReportes : almacen_local
+ServicioReportes "1" --> "1" PuertoEnvioReportes : envio
+ServicioIngesta "1" --> "1" AlmacenServidorReportes : almacen
+ServicioReportes ..> FabricaEstrategias : crea estrategias
+ServicioIngesta ..> FabricaEstrategias : crea estrategias
+FabricaEstrategias ..> AdaptadorIndexedDB : crea
+FabricaEstrategias ..> AdaptadorEnvioHttp : crea
+FabricaEstrategias ..> AdaptadorPostgres : crea
+FabricaEstrategias ..> EnvioConRegistro : crea
+
+' --- Decorator de registro ---
+EnvioConRegistro ..|> PuertoEnvioReportes
+EnvioConRegistro "1" o--> "1" PuertoEnvioReportes : envuelve
+
+' --- Observer ---
+ServicioReportes "1" *-- "1" Publicador
+Publicador "1" o-- "0..*" Observador : notifica
+VistaConsola ..|> Observador
+ContadorPendientes ..|> Observador
+Publicador ..> ConsentimientoRechazado : publica
+Publicador ..> ReporteGuardado : publica
+Publicador ..> SincronizacionTerminada : publica
+ControladorReportes "1" --> "1" ServicioReportes : servicio
+ControladorReportes "1" --> "1" Observador : vista
+ControladorReportes "1" --> "1" ContadorPendientes : contador
+ServicioReportes ..> ConsentimientoNoAceptado : lanza
+
+' --- State ---
+Borrador --|> EstadoReporte
+Encolado --|> EstadoReporte
+Recibido --|> EstadoReporte
+Verificado --|> EstadoReporte
+Atendido --|> EstadoReporte
+Rechazado --|> EstadoReporte
+CicloReporte "0..*" --> "1" Reporte : reporte
+CicloReporte "0..*" --> "1" EstadoReporte : estado
+EstadoReporte ..> TransicionInvalida : lanza
+
+' --- Componente de IA ---
+ClasificadorLLM ..|> ClasificadorDanos
+ClasificadorConCache ..|> ClasificadorDanos
+ClasificadorConCache "1" o--> "1" ClasificadorDanos : envuelve
+ClasificadorDanos ..> Clasificacion : devuelve
+ClasificadorLLM "1" --> "1" Guardrail : guardrails
+FormatoValido --|> Guardrail
+NoDeclararSeguro --|> Guardrail
+SinDatosPersonales --|> Guardrail
+Guardrail "1" --> "0..1" Guardrail : siguiente
+Guardrail ..> SalidaLLM : revisa
+Guardrail ..> RespuestaBloqueada : lanza
 @enduml

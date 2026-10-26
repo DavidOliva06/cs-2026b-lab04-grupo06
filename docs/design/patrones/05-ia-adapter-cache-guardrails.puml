@@ -1,0 +1,56 @@
+@startuml
+title Componente de IA - Adapter + Decorator (caché) + Chain of Responsibility
+
+skinparam classAttributeIconSize 0
+
+interface ClasificadorDanos <<Strategy>> {
+  + clasificar(descripcion: str) : Clasificacion
+}
+class ClasificadorLLM <<Adapter>> {
+  + clasificar(descripcion: str) : Clasificacion
+}
+class ClasificadorConCache <<Decorator>> {
+  + clasificar(descripcion: str) : Clasificacion
+}
+class LLMSimulado <<Adaptee>> {
+  + generar(mensajes: list[dict], temperatura: float) : dict
+}
+class Clasificacion {
+  + gravedad : str [0..1]
+  + resumen : str [0..1]
+  + requiere_revision : bool
+  + motivo : str
+}
+
+abstract class Guardrail <<Handler>> {
+  + revisar(salida: SalidaLLM) : None
+}
+class FormatoValido <<ConcreteHandler>>
+class NoDeclararSeguro <<ConcreteHandler>>
+class SinDatosPersonales <<ConcreteHandler>>
+class SalidaLLM {
+  + texto : str
+  + datos : dict [0..1]
+}
+class RespuestaBloqueada <<exception>>
+
+ClasificadorLLM ..|> ClasificadorDanos
+ClasificadorConCache ..|> ClasificadorDanos
+ClasificadorConCache "1" o--> "1" ClasificadorDanos : envuelve
+ClasificadorLLM "1" --> "1" LLMSimulado : traduce a generar()
+ClasificadorLLM "1" --> "1" Guardrail : primer eslabón
+ClasificadorDanos ..> Clasificacion : devuelve
+
+FormatoValido --|> Guardrail
+NoDeclararSeguro --|> Guardrail
+SinDatosPersonales --|> Guardrail
+Guardrail "1" --> "0..1" Guardrail : siguiente
+Guardrail ..> SalidaLLM : revisa
+Guardrail ..> RespuestaBloqueada : lanza
+
+note bottom of Guardrail
+  Cadena por defecto:
+  FormatoValido -> NoDeclararSeguro -> SinDatosPersonales.
+  Si alguno bloquea, el reporte pasa a revisión humana.
+end note
+@enduml

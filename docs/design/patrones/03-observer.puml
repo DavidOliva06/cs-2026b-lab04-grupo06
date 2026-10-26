@@ -1,0 +1,51 @@
+@startuml
+title Patrón Observer - avisos del flujo HU-01
+
+skinparam classAttributeIconSize 0
+
+class ServicioReportes <<ConcreteSubject>> {
+  + suscribir(observador: Observador) : None
+  + desuscribir(observador: Observador) : None
+  + crear_reporte(ciudadano, foto, ubicacion) : Reporte
+  + sincronizar_pendientes() : int
+}
+class Publicador <<Subject>> {
+  + suscribir(observador: Observador) : None
+  + desuscribir(observador: Observador) : None
+  + publicar(evento: Evento) : None
+}
+interface Observador <<Observer>> {
+  + notificar(evento: Evento) : None
+}
+class VistaConsola <<ConcreteObserver>> {
+  + notificar(evento: Evento) : None
+}
+class ContadorPendientes <<ConcreteObserver>> {
+  + pendientes : int
+  + notificar(evento: Evento) : None
+}
+class ControladorReportes {
+  + enviar_reporte(ciudadano, foto, ubicacion) : Reporte [0..1]
+  + al_recuperar_conexion() : None
+}
+
+class ConsentimientoRechazado <<evento>> {
+  + ciudadano_id : str
+}
+class ReporteGuardado <<evento>> {
+  + reporte_id : str
+}
+class SincronizacionTerminada <<evento>> {
+  + enviados : int
+  + pendientes : int
+}
+
+ServicioReportes "1" *-- "1" Publicador
+Publicador "1" o-- "0..*" Observador : notifica
+VistaConsola ..|> Observador
+ContadorPendientes ..|> Observador
+ControladorReportes ..> ServicioReportes : suscribe la vista y el contador
+Publicador ..> ConsentimientoRechazado : publica
+Publicador ..> ReporteGuardado : publica
+Publicador ..> SincronizacionTerminada : publica
+@enduml
