@@ -11,9 +11,17 @@ FOTO = b"\xff\xd8\xff foto de prueba"
 AREQUIPA = (-16.3989, -71.5350)
 
 
-@pytest.fixture(params=["antes.servicio", "despues.servicio"])
+# Versión -> módulo que se importa. "antes" está en src/modulo/antes; "después" es la
+# raíz src/modulo, que se importa como paquete (modulo) porque usa imports relativos.
+VERSIONES = {
+    "antes.servicio": "antes.servicio",
+    "despues.servicio": "modulo.servicio",
+}
+
+
+@pytest.fixture(params=list(VERSIONES))
 def m(request):
-    return importlib.import_module(request.param)
+    return importlib.import_module(VERSIONES[request.param])
 
 
 @pytest.fixture(autouse=True)
