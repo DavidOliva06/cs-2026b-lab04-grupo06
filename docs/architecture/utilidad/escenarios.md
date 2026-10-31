@@ -43,7 +43,7 @@ Escenarios de seis partes. Los que extienden un escenario de drivers.md lo indic
 - **Importancia:** H si fallar el escenario arruina el simulacro o incumple la ley; M si lo degrada; L si no se nota durante el simulacro.
 - **Dificultad:** H si exige cambiar el estilo de ADR-001 o pelear por los recursos del servidor único (R-03); M si exige trabajo nuevo dentro del estilo actual; L si la arquitectura actual ya casi lo cubre.
 
-| ID | IA | Justificación de la IA | Final | En el árbol |
+| ID | IA | Justificación  | Final | En el árbol |
 |----|----|------------------------|-------|-------------|
 | D1 | (H,H) | Es el atributo crítico: un reporte perdido retrasa la ayuda. Es difícil porque la red congestionada y el borrado de datos de la PWA están fuera del control del servidor. | (H,H) | Sí |
 | D2 | (H,M) | Sin ingesta no entra ningún reporte. En un servidor único no hay réplica, pero recuperar un proceso caído no exige cambiar el estilo. | (H,M) | Sí |
