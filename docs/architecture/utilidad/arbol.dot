@@ -1,0 +1,61 @@
+// SismoReporta AQP - Árbol de utilidad (Lab 08, E1)
+// Escenario de crecimiento: simulacro nacional, 20 000 reportes en 1 hora con la red móvil congestionada
+// Hojas: (importancia, dificultad) ID: escenario y medida. Detalle en escenarios.md
+digraph arbol_utilidad {
+    graph [rankdir=LR, charset="UTF-8", fontname="Helvetica", nodesep=0.25, ranksep=0.5,
+           label="Árbol de utilidad - SismoReporta AQP (simulacro nacional)", labelloc=t, fontsize=16];
+    node  [fontname="Helvetica", fontsize=11, shape=box, style="rounded,filled", fillcolor="#ffffff"];
+    edge  [arrowhead=none, color="#555555"];
+
+    utilidad [label="Utilidad", fillcolor="#1168bd", fontcolor="#ffffff", fontsize=14];
+
+    // Atributos de calidad
+    disponibilidad   [label="Disponibilidad\n(crítico)", fillcolor="#08427b", fontcolor="#ffffff"];
+    rendimiento      [label="Rendimiento",               fillcolor="#08427b", fontcolor="#ffffff"];
+    seguridad        [label="Seguridad",                 fillcolor="#08427b", fontcolor="#ffffff"];
+    modificabilidad  [label="Modificabilidad",           fillcolor="#08427b", fontcolor="#ffffff"];
+
+    utilidad -> {disponibilidad rendimiento seguridad modificabilidad};
+
+    // Refinamientos
+    node [fillcolor="#dbe9f6"];
+    ingesta_pico   [label="Ingesta bajo pico"];
+    fallas         [label="Fallas del servidor"];
+    lat_ingesta    [label="Latencia de ingesta"];
+    consulta_mapa  [label="Consulta del mapa"];
+    confidencial   [label="Confidencialidad"];
+    integridad     [label="Integridad de los reportes"];
+    cobertura      [label="Ampliación de cobertura"];
+    reglas         [label="Reglas de priorización"];
+
+    disponibilidad  -> {ingesta_pico fallas};
+    rendimiento     -> {lat_ingesta consulta_mapa};
+    seguridad       -> {confidencial integridad};
+    modificabilidad -> {cobertura reglas};
+
+    // Escenarios (hojas). Rojo: (H,H); ámbar: (H,M); blanco: resto
+    node [shape=note, style=filled, fillcolor="#ffffff"];
+
+    D1 [fillcolor="#f8d0d0", label="(H,H) D1: 20 000 reportes en 60 min, ráfaga de 2 000 en 1 min,\lred congestionada -> ≥ 99,5 % guardados ≤ 15 min tras recuperar señal;\l0 duplicados; 0 perdidos en el dispositivo\l"];
+    D4 [fillcolor="#f8d0d0", label="(H,H) D4: 5 000 PWA reintentan tras 10 min de caída ->\l0 caídas nuevas en 30 min; pendientes guardados ≤ 10 min; ≤ 1 % de 5xx\l"];
+    D2 [fillcolor="#fbe7c6", label="(H,M) D2: el proceso de la API termina en pleno pico ->\lrecepción restablecida ≤ 60 s; ingesta disponible ≥ 98 % de la hora\l"];
+    D3 [fillcolor="#fbe7c6", label="(H,M) D3: volumen de fotos al 95 % ->\l100 % de reportes sin foto aceptados; 0 s de caída de PostgreSQL;\laviso al operador ≤ 60 s\l"];
+
+    R1 [fillcolor="#fbe7c6", label="(H,M) R1: ráfaga de 33 reportes por s ->\lconfirmación p95 ≤ 2 s, p99 ≤ 5 s; ≥ 35 reportes por s durante 5 min\l"];
+    R2 [fillcolor="#f8d0d0", label="(H,H) R2: 30 coordinadores, 20 000 reportes activos, ingesta en curso ->\lmapa p95 ≤ 3 s; filtro p95 ≤ 1 s; retraso ≤ 60 s\l"];
+
+    S1 [label="(H,L) S1: 50 intentos de ver fotos y ubicaciones ajenas ->\l100 % rechazados (403) y registrados; 0 bytes devueltos; TLS ≥ 1.2\l"];
+    S2 [fillcolor="#fbe7c6", label="(H,M) S2: 1 000 reportes falsos en 5 min desde un dispositivo ->\l≤ 10 aceptados en 10 min; 0 zonas repriorizadas por un único origen;\l≥ 99,5 % de reportes legítimos aceptados\l"];
+
+    M1 [fillcolor="#fbe7c6", label="(H,M) M1: extender la cobertura a las 25 regiones ->\l≤ 3 días-persona; 0 archivos del módulo de reportes; ≤ 5 archivos en total\l"];
+    M2 [label="(M,L) M2: nuevo criterio de priorización (colegios, hospitales) ->\l≤ 1 día-persona; 0 archivos fuera de priorización; ≤ 60 s sin ingesta\l"];
+
+    ingesta_pico  -> {D1 D4};
+    fallas        -> {D2 D3};
+    lat_ingesta   -> R1;
+    consulta_mapa -> R2;
+    confidencial  -> S1;
+    integridad    -> S2;
+    cobertura     -> M1;
+    reglas        -> M2;
+}
