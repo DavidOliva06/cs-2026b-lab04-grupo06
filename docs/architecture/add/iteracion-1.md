@@ -268,7 +268,7 @@ Medida de D1: porcentaje de reportes guardados ≤ 15 min después de recuperar 
 | ID | Riesgo o pendiente | Origen | Cómo se cierra |
 |---|---|---|---|
 | RI-01 | En la simulación base se difiere el 69 % de las fotos (13 723 de 20 000), y no se sabe cuántas llegan a enviarse después | T2 y ADR-003 | Medir el % de fotos recibidas ≤ 24 h después del simulacro |
-| RI-02 | Durante el modo pico, los reportes falsos influyen más en la priorización | T2 y S2 | Llevarlo a la iteración de seguridad (S2) y a ATAM-lite (E3) |
+| RI-02 | Durante el modo pico, los reportes falsos influyen más en la priorización | T2 y S2 | Atendido en la [iteración 3](iteracion-3.md): cerrado para un solo dispositivo con T9 + T11; abierto frente a Sybil (RI-10). E3 (ATAM-lite) no se realiza |
 | RI-03 | La simulación confirma que el cuello de botella son las conexiones, pero con parámetros supuestos | Sección 9.2 | Prueba de carga sobre el sistema real (E4) |
 | RI-04 | El umbral de activación de T2 (70 % de las conexiones) no está calibrado | T2 | Calibrarlo con la prueba de carga |
 | RI-05 | La meta de 0 reportes perdidos en el dispositivo no tiene evidencia | ADR-003 | Prueba en celulares de gama baja con almacenamiento casi lleno |
