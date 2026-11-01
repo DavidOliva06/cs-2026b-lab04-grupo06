@@ -361,6 +361,8 @@ VARIANTES = {
     "Ráfaga de 4 000 en 1 min": {"reportes_fondo": 16_000, "reportes_rafaga": 4_000},
     "Caída de 10 min en el minuto 20": {"caida_inicio_s": 1_200.0, "caida_duracion_s": 600.0},
     "Caída de 13 min en el minuto 20": {"caida_inicio_s": 1_200.0, "caida_duracion_s": 780.0},
+    "1 núcleo (droplet del Lab 06)": {"nucleos": 1},
+    "1 núcleo y caída de 10 min": {"nucleos": 1, "caida_inicio_s": 1_200.0, "caida_duracion_s": 600.0},
 }
 
 
@@ -486,6 +488,12 @@ def main():
         texto += [
             "", f"## Caída de 10 min en el minuto 20: aporte de cada táctica ({len(semillas)} réplicas)", "",
             tabla_principal({nombre: resumir(sims) for nombre, sims in caida.items()}, len(semillas)),
+        ]
+        s_un_nucleo = replace(s, **VARIANTES["1 núcleo y caída de 10 min"])
+        un_nucleo = {nombre: correr(s_un_nucleo, nombre, semillas) for nombre in CONFIGURACIONES}
+        texto += [
+            "", f"## 1 núcleo y caída de 10 min: aporte de cada táctica ({len(semillas)} réplicas)", "",
+            tabla_principal({nombre: resumir(sims) for nombre, sims in un_nucleo.items()}, len(semillas)),
         ]
         graficos[SALIDA_GRAFICO.with_name("d1-caida-10min.svg")] = (
             caida, s_caida, "D1 con una caída del servidor de 10 min, antes y después de T2 (modo pico)",

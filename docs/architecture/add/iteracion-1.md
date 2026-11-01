@@ -7,9 +7,9 @@
 | Objetivo | Escenario **D1** (H,H): ≥ 99,5 % de 20 000 reportes guardados ≤ 15 min después de recuperar la señal; 0 duplicados; 0 perdidos en el dispositivo (sección 2) |
 | Elemento refinado | Ingesta: PWA (cola local y sincronizador), proxy inverso, API de ingesta, worker y almacenamiento de fotos |
 | Conceptos evaluados | T1 limitar la respuesta a eventos, T2 degradación (modo pico), T3 aumentar recursos, T4 redundancia pasiva (secciones 5 a 7) |
-| Decisión | **T2 aceptada**; T1 aplazada por la evidencia; T3 y T4 rechazadas; se mantiene el estilo de ADR-001 (sección 8) |
+| Decisión | **T2 aceptada**; T1, T3 y T4 rechazadas; se mantiene el estilo de ADR-001 (sección 8) |
 | Evidencia | Simulación de eventos discretos [fitness/simulacion_d1.py](../../../fitness/simulacion_d1.py), con tablas y gráficos antes y después (sección 9) |
-| ¿Se cumple D1? | **Sí en la simulación, con T2**, incluso con una caída del servidor de 10 min, que sin T2 baja a 97,47 %. La parte "0 perdidos en el dispositivo" queda sin evidencia (sección 10) |
+| ¿Se cumple D1? | **Sí en la simulación, con T2**, también con 1 núcleo (el droplet del Lab 06) y con una caída del servidor de 10 min. Sin T2 no se cumple con 1 núcleo (98,82 %). La parte "0 perdidos en el dispositivo" queda sin evidencia (sección 10) |
 
 ## 1. Entradas
 
@@ -138,12 +138,12 @@ En la primera evaluación se propuso como margen para el simulacro. Se rechaza a
 
 ## 8. Decisión de la iteración
 
-La primera versión de esta decisión aceptaba T1 y T2. La evidencia de la sección 9 cambió la decisión sobre T1.
+La primera versión de esta decisión aceptaba T1 y T2. La evidencia de la sección 9 aplazó T1, y la corrección a 1 núcleo de la sección 9.7 la rechazó.
 
 | Táctica | Decisión | Motivo |
 |---|---|---|
 | T2. Degradación (modo pico) | **Aceptada** | Es la única táctica que hace cumplir D1 con una caída de 10 min (de 97,47 % a 100 %) y en la base baja el máximo de 298 s a 18 s |
-| T1. Limitar la respuesta a eventos | **Aplazada** | No mejora D1 en ninguna variante simulada y alarga el máximo (de 18 s con T2 a 89 s con T1 + T2). Se reconsidera si la prueba de carga real muestra esperas expiradas (CPU saturada) o en la iteración de D4 |
+| T1. Limitar la respuesta a eventos | **Rechazada** | Con 2 núcleos no mejora D1 en ninguna variante. La condición para reconsiderarla, la CPU saturada, aparece con 1 núcleo (sección 9.7), y aun así empeora D1: con la caída de 10 min, T1 + T2 no cumple (99,28 %) y solo T2 sí (99,86 %) |
 | T3. Aumentar recursos temporalmente | Rechazada | Sección 7 |
 | T4. Redundancia pasiva | Rechazada | Sección 7 |
 
@@ -189,7 +189,7 @@ Las tablas completas quedan en [fitness/resultados/d1.md](../../../fitness/resul
 | Espera de respuesta en la PWA | 30 s | Supuesto |
 | Reintentos | Espera aleatoria entre 0 y min(120 s, 2 s × 2ⁿ) | ADR-003 y tope de 2 min de la sección 4 |
 | Conexiones del proxy | 1 000 simultáneas | Supuesto: proxy en un servidor de 2 vCPU |
-| CPU del servidor | 2 núcleos compartidos entre la API y 1 worker | ADR-001 y R-03 |
+| CPU del servidor | 2 núcleos compartidos entre la API y 1 worker | ADR-001 y R-03. **Error del supuesto:** el droplet del Lab 06 tiene 1 vCPU; la sección 9.7 repite la simulación con 1 núcleo |
 | Tiempos de servicio (media, lognormal con cv 0,5) | Datos 30 ms; duplicado 10 ms; guardar foto 20 ms; procesar foto 150 ms (worker) | Supuesto de la sección 4 |
 | T1 | 35 reportes/s, balde de 70, `Retry-After` entre 5 y 60 s | Sección 6 |
 | T2 | Umbral del 70 % de las conexiones, muestreo cada 5 s, activo hasta el final | Sección 6 |
@@ -241,6 +241,8 @@ Medida de D1: porcentaje de reportes guardados ≤ 15 min después de recuperar 
 | Ráfaga de 4 000 en 1 min | 100,00 % | 100,00 % | 185 s | 43 s |
 | Caída de 10 min en el minuto 20 | **97,56 %** | 100,00 % | 796 s | 641 s |
 | Caída de 13 min en el minuto 20 | 90,90 % | **99,02 %** | 1 020 s | 836 s |
+| 1 núcleo (droplet del Lab 06) | **98,82 %** | 100,00 % | 474 s | 40 s |
+| 1 núcleo y caída de 10 min | 90,38 % | 99,88 % | 1 083 s | 714 s |
 
 ### 9.6 Lectura de la evidencia
 
@@ -252,16 +254,34 @@ Medida de D1: porcentaje de reportes guardados ≤ 15 min después de recuperar 
 6. **El costo de T2 tiene tamaño:** en la base se difieren 13 723 de 20 000 fotos (69 %). Eso dimensiona RI-01.
 7. **Duplicados:** en la simulación, las "0 filas duplicadas" se cumplen por construcción, porque el modelo guarda cada UUID una sola vez. La evidencia real de la idempotencia viene de las pruebas `test_confirmacion_perdida_no_duplica_el_reporte` y `test_servidor_recibe_dos_veces_el_mismo_reporte_y_guarda_uno` de [test_comportamiento.py](../../../tests/test_comportamiento.py); las 25 ejecuciones pasan.
 
+### 9.7 Corrección: 1 núcleo, como el droplet del Lab 06
+
+Al actualizar el modelo C4 (E6) se encontró que la simulación suponía 2 núcleos, pero el droplet de la vista de despliegue tiene 1 vCPU. Se repitió con 1 núcleo (10 réplicas, mismas semillas):
+
+| 1 núcleo y caída de 10 min | Guardados ≤ 15 min (media de 10) | Peor réplica | p95 hasta guardar | ¿Cumple D1? |
+|---|---|---|---|---|
+| Antes | 90,54 % | 90,22 % | 1 089 s | No |
+| Solo T1 | 90,48 % | 90,19 % | 1 086 s | No |
+| **Solo T2 (decisión)** | 99,90 % | **99,86 %** | 714 s | **Sí** |
+| T1 + T2 | 99,44 % | 99,28 % | 743 s | **No** |
+
+1. **Con 1 núcleo, T2 pasa a ser necesaria también sin fallas.** "Antes" guarda a tiempo el 98,82 % en la peor réplica y no cumple; con T2 se guarda el 100 % (sección 9.5).
+2. **Con 1 núcleo la CPU sí se satura:** hay ≈ 28 000 esperas expiradas en "antes" y ≈ 3 300 con T2, frente a 0 con 2 núcleos. El punto 5 de la sección 9.6 solo vale para 2 núcleos.
+3. **T1 empeora D1 aun con la CPU saturada:** con la caída, T1 + T2 baja a 99,28 % y no cumple. Esto confirma el rechazo de T1.
+4. **El margen de T2 con 1 núcleo y caída es pequeño:** 99,86 % frente al 99,5 % exigido.
+
 ## 10. ¿Se cumple el escenario D1?
 
 | Parte de la medida de D1 | Antes | Después (T2) | Evidencia |
 |---|---|---|---|
 | ≥ 99,5 % guardados ≤ 15 min, supuestos base | Sí (100 %) | Sí (100 %) | Simulación, sección 9.3 |
 | ≥ 99,5 % guardados ≤ 15 min, con caída de 10 min | **No (97,47 %)** | **Sí (100 %)** | Simulación, sección 9.4 |
+| ≥ 99,5 % guardados ≤ 15 min, con 1 núcleo (droplet real) | **No (98,82 %)** | **Sí (100 %)** | Simulación, sección 9.5 |
+| ≥ 99,5 % guardados ≤ 15 min, con 1 núcleo y caída de 10 min | **No (90,22 %)** | **Sí (99,86 %)** | Simulación, sección 9.7 |
 | 0 duplicados | Sí | Sí | Pruebas de `test_comportamiento.py` |
 | 0 reportes perdidos en el dispositivo | Sin evidencia | Sin evidencia | Fuera del modelo; ADR-003 ya advierte que no se puede garantizar (RI-05) |
 
-**Conclusión:** D1 se cumple en la simulación con T2, con margen frente a caídas de hasta 10 min. Es evidencia de un modelo con parámetros supuestos, no de una prueba de carga sobre el sistema real (RI-03), y la parte "0 perdidos en el dispositivo" sigue sin evidencia.
+**Conclusión:** D1 se cumple en la simulación con T2, también con 1 núcleo y frente a caídas de hasta 10 min; con 1 núcleo y caída el margen es de 0,36 puntos. Es evidencia de un modelo con parámetros supuestos, no de una prueba de carga sobre el sistema real (RI-03), y la parte "0 perdidos en el dispositivo" sigue sin evidencia.
 
 ## 11. Riesgos y pendientes
 

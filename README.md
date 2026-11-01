@@ -219,6 +219,32 @@ Medidas con radon (`radon cc -s -a` y `radon raw -s`) sobre el código actual, s
 
 `sincronizar_pendientes` bajó de 5 a 3. Pruebas: 12 de caracterización antes del refactor; después, 13 funciones de prueba con 25 ejecuciones, todas pasan.
 
+## Diseño de la arquitectura (Lab 08)
+
+Escenario de crecimiento: simulacro nacional, con 20 000 reportes en 1 hora y la red móvil congestionada. El atributo crítico es la disponibilidad.
+
+### Árbol de utilidad
+
+![Árbol de utilidad](docs/architecture/utilidad/arbol.png)
+
+Fuente: [arbol.dot](docs/architecture/utilidad/arbol.dot). Los 13 escenarios candidatos, sus calificaciones (importancia, dificultad) y la corrección de la calificación de R2 están en [escenarios.md](docs/architecture/utilidad/escenarios.md).
+
+### Iteraciones de ADD
+
+| Iteración | Escenario | Táctica | Evidencia | ¿Cumple? |
+|---|---|---|---|---|
+| [1](docs/architecture/add/iteracion-1.md) | **D1** (H,H), disponibilidad: ≥ 99,5 % de los 20 000 reportes guardados ≤ 15 min después de recuperar la señal | Degradación: modo pico, con los datos primero y las fotos diferidas ([ADR-006](docs/architecture/adr/006-modo-pico-en-la-ingesta.md)) | Simulación de eventos discretos [simulacion_d1.py](fitness/simulacion_d1.py), con 1 núcleo como el droplet: sin fallas, de 98,82 % a 100 %; con una caída de 10 min, de 90,22 % a 99,86 % | **Sí**, en la simulación |
+| [2](docs/architecture/add/iteracion-2.md) | **R2** (H,H), rendimiento: carga del mapa p95 ≤ 3 s, filtro p95 ≤ 1 s y retraso ≤ 60 s, con 30 coordinadores | Aumentar la eficiencia: API del mapa agregada por zona y comprimida con gzip ([ADR-007](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)) | Prototipo de medición [prototipo_r2.py](fitness/prototipo_r2.py): carga del mapa p95 de 13,46 s a 1,00 s; respuesta de 826 KB a 28 KB | **Sí** |
+| [3](docs/architecture/add/iteracion-3.md) | **S2** (H,M), seguridad: 1 000 reportes falsos en 5 min desde un dispositivo | Identificar actores, y detectar y reaccionar: límite y un voto por dispositivo ([ADR-008](docs/architecture/adr/008-identificador-de-dispositivo.md)) | Simulación por conteo [simulacion_s2.py](fitness/simulacion_s2.py), más una comparación de alternativas para el código por SMS: reportes falsos aceptados de 1 000 a 10, zonas alteradas de 5 a 0 y 100 % de legítimos aceptados | **Sí**, salvo un ataque Sybil, aceptado como riesgo residual |
+
+Los riesgos, puntos de sensibilidad y puntos de trade-off están en [atam-lite.md](docs/architecture/atam-lite.md). Las reglas estructurales de ADR-001 y ADR-005 se verifican con import-linter ([.importlinter](.importlinter)).
+
+### ADR del Lab 08
+
+- [ADR-006: Modo pico en la ingesta: datos primero y fotos diferidas](docs/architecture/adr/006-modo-pico-en-la-ingesta.md)
+- [ADR-007: API del mapa agregada por zona](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)
+- [ADR-008: Identificador de dispositivo con límite y un voto por zona](docs/architecture/adr/008-identificador-de-dispositivo.md)
+
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
 En definitiva el trabajo se agilizo utilizandolas para los procesos que no se tiene tanto conocimiento como el uso de mermaid y de puml.

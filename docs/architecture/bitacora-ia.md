@@ -289,3 +289,109 @@ Modificacion: El diagrama funcionaba pero las etiquetas de nodos vecinos se sola
     comentario.
     Respuesta:
     
+
+## 7. Prompt 7 (Lab 08, E1) Escenarios de calidad de seis partes
+    Prompt:
+    Actúa como arquitecto de software. Contexto: drivers.md, ADR-001 y el nuevo contexto [escenario de crecimiento].
+    Tarea: propón escenarios de calidad de seis partes (fuente, estímulo, entorno, artefacto, respuesta, medida)
+    para rendimiento, disponibilidad, seguridad y modificabilidad. Para cada uno sugiere (importancia, dificultad)
+    con H/M/L y justifícalo. Restricciones: medidas numéricas; no propongas soluciones todavía.
+    Respuesta:
+    13 escenarios candidatos (D1 a D4, R1 a R3, S1 a S3, M1 a M3) con su calificación, el árbol de utilidad en
+    Graphviz (arbol.dot) y escenarios.md.
+Verificación y corrección:
+- El primer contexto pegado (de 300 a 1 200 buses, 50 000 consultas de tiempo de llegada) era de otro caso. La IA lo
+  detectó al compararlo con drivers.md y preguntó; el equipo lo corrigió por el simulacro nacional (20 000 reportes en
+  1 hora con la red móvil congestionada).
+- **Falso positivo de los escenarios:** al revisar la lista de verificación ("ninguna medida dice rápido, seguro o fácil"),
+  la búsqueda automática de esas palabras marcó `escenarios.md`, línea 86. Era la propia línea de la lista de
+  verificación, que cita las palabras entre comillas, no una medida. Ninguna medida se cambió.
+- Corrección de la calificación: la IA calificó R2 como (H,M) porque el mapa "es una consulta de lectura". Se corrigió
+  a (H,H): el servidor es único (R-03) y la consulta compite con ≈ 33 escrituras por segundo de la ingesta (ADR-001).
+  Esa corrección también la redactó la IA, a pedido del equipo; el equipo debe confirmarla o reemplazarla por la suya.
+
+## 8. Prompt 8 (Lab 08, E2) Tácticas candidatas para el escenario objetivo
+    Prompt:
+    Elija como objetivo el escenario de mayor prioridad y dificultad. Propón 4 tácticas candidatas del catálogo de
+    Bass et al. Para cada una indica qué mejora, qué empeora, costo aproximado y complejidad para un equipo de
+    1 developer. Respeta el ADR-001; si recomiendas cambiar el estilo, justifícalo con números.
+    Respuesta:
+    Objetivo D1. Tácticas T1 (limitar la respuesta a eventos), T2 (degradación), T3 (aumentar recursos de forma
+    temporal) y T4 (redundancia pasiva). Recomendó T2 + T1, con T3 como margen, y mantener el estilo de ADR-001.
+Verificación y corrección:
+- El equipo pidió reanalizar los trade-offs y rechazar al menos una táctica. Al reanalizar, la IA cambió su propia
+  recomendación: T3 pasó de "margen útil" a **rechazada**, porque un simulacro con 4 veces los recursos aprueba D1 con
+  una capacidad que no existirá en un sismo real. T4 se rechazó por costo (US$ 40–60 al mes, fuera de R-03).
+- Varias cifras de partida (foto de 300 KB, subida de 50 kbps, 30 ms por petición) son supuestos de la IA y quedaron
+  escritos como tales en iteracion-1.md.
+
+## 9. Prompt 9 (Lab 08, E2) Evidencia del escenario antes y después
+    Prompt:
+    Genere evidencia: adapte una de las simulaciones del ejemplo con datos de su caso (tasa de llegada, tiempos de
+    servicio, probabilidad de falla) o construya un prototipo mínimo. Debe mostrar el escenario antes y después de la táctica.
+    Respuesta:
+    Simulación de eventos discretos fitness/simulacion_d1.py (solo biblioteca estándar), con tablas, sensibilidad y
+    dos gráficos SVG.
+Verificación y corrección:
+- El resultado contradijo el análisis previo de la IA: con los supuestos base, la arquitectura "antes" ya cumplía D1
+  (100 %). No se ajustaron los supuestos para que fallara; se agregó una caída del servidor de 10 min, donde "antes"
+  baja a 97,47 % y T2 cumple.
+- La simulación mostró que T1 no mejoraba D1 en ninguna variante. La decisión de la iteración 1 cambió de "T1 + T2" a
+  "T2; T1 aplazada".
+- Los gráficos se revisaron renderizados: las etiquetas al final de las líneas se encimaban y se quitaron.
+
+## 10. Prompt 10 (Lab 08, E4) Iteraciones 2 y 3 de ADD
+    Prompt:
+    Realicen dos iteraciones más, cada una con un escenario (H,*) distinto. Al menos una debe atender disponibilidad
+    o seguridad. Cada iteración sigue los 7 pasos de ADD y produce evidencia; se acepta una comparación de
+    alternativas cuando el atributo no se puede simular.
+    Respuesta:
+    Iteración 2 (R2) con el prototipo fitness/prototipo_r2.py e iteración 3 (S2) con la simulación
+    fitness/simulacion_s2.py, más una comparación de alternativas para la autenticación por SMS.
+Verificación y corrección:
+- PostgreSQL pedía contraseña, así que el prototipo de R2 usa SQLite. Los bytes de cada respuesta no dependen del motor;
+  los milisegundos sí, y quedó como riesgo (RI-07).
+- **Falso positivo de la simulación de S2:** la columna "zonas que entran al top 20 por el ataque" mostraba 12 zonas
+  para el límite por IP. Al revisarla, esas zonas no las movía el ataque, sino los reportes legítimos bloqueados por el
+  CGNAT. Se renombró la medida a "zonas del top 20 distintas de las que darían solo los legítimos".
+- Se agregó la variante "ataque concentrado en 1 zona" para comprobar si T11 aportaba algo sobre T9: sin ella, T11 no
+  tenía evidencia propia.
+
+## 11. Prompt 11 (Lab 08, E5) Fitness functions estructurales
+    Prompt:
+    Escriban 2 o más fitness functions estructurales que verifiquen las reglas de su ADR-001 y ADR-005 (import-linter).
+    Respuesta:
+    4 contratos en .importlinter: la ingesta no importa la IA, la IA está aislada, las capas van en un solo sentido y
+    el servicio no depende de adaptadores ni de servicios externos.
+Verificación y corrección:
+- Prueba de mutación: en una copia del código se inyectaron 3 imports prohibidos y los 4 contratos fallaron, así que los
+  que pasan no lo hacen sin verificar nada.
+- El contrato del servicio falló sobre el código real: servicio.py importaba externos y adaptadores, en contra de lo
+  que afirma ADR-005. El equipo eligió corregir el código: se separó entrada.py (endpoint HTTP, controlador y
+  demostración) y las 25 pruebas siguieron pasando.
+
+## 12. Prompt 12 (Lab 08, E6) ADR-006 a ADR-008 y workspace.dsl
+    Prompt:
+    Redacten un ADR por iteración (ADR-006 a ADR-008) con la plantilla de los anteriores, incluyendo la evidencia y el
+    trade-off aceptado. Actualicen workspace.dsl: nuevos contenedores o tecnologías y, en la descripción de cada
+    elemento, el escenario que atiende [QA-xx]. Ejecuten structurizr validate y exporten la vista de contenedores.
+    Respuesta:
+    Tres ADR, el componente Dispositivos, las etiquetas [QA-xx], la validación sin errores y la exportación a PlantUML,
+    Mermaid y PNG.
+Verificación y corrección:
+- Al revisar la vista de despliegue, la IA encontró que **su propia simulación de D1 suponía 2 núcleos, pero el droplet
+  del Lab 06 tiene 1 vCPU**. Se repitió con 1 núcleo: "antes" ya no cumple D1 ni sin fallas (98,82 %), T2 sigue
+  cumpliendo (100 %; 99,86 % con la caída de 10 min), y T1 + T2 no cumple con la caída (99,28 %). La decisión de ADR-006 se mantiene y T1 pasa de
+  aplazada a rechazada. Quedó como el riesgo R-03 de atam-lite.md.
+
+## 13. Prompt 13 (Lab 08, E7) ATAM-lite y matriz de riesgos
+    Prompt:
+    Completen atam-lite.md con todos los hallazgos (propios y recibidos) y una matriz de probabilidad e impacto.
+    Para cada riesgo de la zona crítica, indiquen la mitigación o la razón para aceptarlo.
+    Respuesta:
+    atam-lite.md con riesgos, puntos de sensibilidad, puntos de trade-off y no riesgos, y la matriz generada por
+    docs/architecture/riesgos/matriz_riesgos.py.
+Verificación y corrección:
+- No hay hallazgos recibidos: el equipo no realizó E3 (revisión cruzada). La IA no los inventó; atam-lite.md lo indica.
+- Las probabilidades e impactos son una propuesta de la IA a partir de la evidencia de las iteraciones; el equipo debe
+  revisarlos.

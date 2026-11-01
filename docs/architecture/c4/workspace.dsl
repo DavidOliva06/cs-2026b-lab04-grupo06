@@ -14,33 +14,42 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
     #   nodo de infraestructura en la vista de despliegue, no como contenedor.
     # - La cola local (IndexedDB) es parte de la PWA y la cola de trabajos es una tabla
     #   de PostgreSQL (ADR-002), así que ninguna es un contenedor propio ni lleva la forma "Queue".
+    #
+    # Lab 08 (ADR-006 a ADR-008):
+    # - [QA-xx] es el escenario de docs/architecture/utilidad/escenarios.md que atiende cada elemento.
+    #   D1 extiende QA-01, R2 extiende QA-02 y S1 extiende QA-03 de drivers.md.
+    # - No hay contenedores nuevos: las tres decisiones se implementan dentro de los existentes.
+    #   Hay un componente nuevo (Dispositivos, ADR-008) y dos tecnologías nuevas: gzip en el proxy
+    #   (ADR-007) y la firma HMAC-SHA256 del módulo hmac de Python (ADR-008). Ninguna sale de R-02.
+    # - Las personas son fuentes de los estímulos; el brigadista no es fuente de ningún escenario del árbol.
 
     model {
-        ciudadano = person "Ciudadano" "Reporta daños con foto y ubicación tras un sismo."
-        brigadista = person "Brigadista" "Atiende las zonas asignadas y actualiza su estado."
-        coordinador = person "Coordinador" "Revisa el mapa de daños, prioriza zonas y asigna brigadas."
+        ciudadano = person "Ciudadano" "Reporta daños con foto y ubicación tras un sismo. Fuente de [QA-D1] y [QA-S1]."
+        brigadista = person "Brigadista" "Atiende las zonas asignadas y actualiza su estado. No es fuente de ningún escenario del árbol de utilidad."
+        coordinador = person "Coordinador" "Revisa el mapa de daños, prioriza zonas y asigna brigadas. Fuente de [QA-R2]; revisa los dispositivos sospechosos [QA-S2]."
 
-        sismo = softwareSystem "SismoReporta AQP" "Recibe reportes de daños, prioriza zonas y asigna brigadas." {
+        sismo = softwareSystem "SismoReporta AQP" "Recibe reportes de daños, prioriza zonas y asigna brigadas. [QA-D1] [QA-R2] [QA-S1] [QA-S2]" {
 
-            pwa = container "Aplicación web progresiva" "Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión." "JavaScript, CSS, Service Worker e IndexedDB" "Web Browser"
+            pwa = container "Aplicación web progresiva" "Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión; en modo pico deja la foto para después (ADR-006) [QA-D1]. Envía el identificador de dispositivo firmado (ADR-008) [QA-S2]. El panel dibuja un marcador por zona (ADR-007) [QA-R2]." "JavaScript, CSS, Service Worker e IndexedDB" "Web Browser"
 
-            api = container "API" "Monolito modular: ingesta idempotente, mapa, priorización y brigadas." "Python" {
-                # Un componente por paquete de docs/design/paquetes.puml (Lab 05).
-                compartido = component "Compartido" "Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos." "Python"
-                reportes = component "Reportes" "Ingesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes." "Python"
-                priorizacion = component "Priorización" "Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (ADR-004)." "Python"
-                brigadas = component "Brigadas" "Brigada, Asignacion y ServicioAsignacion; implementa ConsultaZonasAsignadas." "Python"
-                mapa = component "Mapa" "ServicioMapa: arma el mapa de daños agrupado por zonas." "Python"
+            api = container "API" "Monolito modular: ingesta idempotente con modo pico [QA-D1], mapa agregado por zona [QA-R2], control de roles [QA-S1], límite por dispositivo [QA-S2], priorización y brigadas." "Python" {
+                # Un componente por paquete de docs/design/paquetes.puml (Lab 05), más Dispositivos (ADR-008).
+                compartido = component "Compartido" "Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos: el reporte y su trabajo se guardan en una transacción [QA-D1]." "Python"
+                reportes = component "Reportes" "Ingesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes [QA-D1]. En modo pico acepta solo los datos y difiere la foto (ADR-006) [QA-D1]; responde 429 al reporte n.º 11 de un dispositivo en 10 min (ADR-008) [QA-S2]." "Python"
+                priorizacion = component "Priorización" "Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (ADR-004). Cuenta un voto por dispositivo y zona y excluye a los sospechosos (ADR-008) [QA-S2]." "Python"
+                brigadas = component "Brigadas" "Brigada, Asignacion y ServicioAsignacion; implementa ConsultaZonasAsignadas. No atiende ningún escenario del árbol de utilidad." "Python"
+                mapa = component "Mapa" "ServicioMapa: GET /api/mapa/zonas devuelve un registro por zona y GET /api/mapa/zonas/{zona}/reportes el detalle (ADR-007) [QA-R2]." "Python"
+                dispositivos = component "Dispositivos" "Emite identificadores de dispositivo firmados, cuenta los reportes de cada dispositivo en 10 min, marca a los sospechosos y publica DispositivoSospechoso al operador con el Observer de ADR-005 (ADR-008) [QA-S2]." "Python, HMAC-SHA256"
             }
 
-            worker = container "Worker" "Procesa fotos y recalcula la priorización de forma periódica." "Python"
+            worker = container "Worker" "Procesa fotos y recalcula la priorización de forma periódica. En modo pico solo recalcula la priorización y deja las fotos para después (ADR-006) [QA-D1]." "Python"
 
-            bd = container "Base de datos" "Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos." "PostgreSQL" "Database"
+            bd = container "Base de datos" "Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos [QA-D1]. Índices por zona y región para el mapa [QA-R2]; dispositivo_id en cada reporte y tabla de dispositivos [QA-S2]." "PostgreSQL" "Database"
 
-            fotos = container "Almacenamiento de fotos" "Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado." "Sistema de archivos" "Database"
+            fotos = container "Almacenamiento de fotos" "Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado [QA-D3]. En modo pico deja de crecer (ADR-006) [QA-D1]." "Sistema de archivos" "Database"
         }
 
-        teselas = softwareSystem "Servicio de teselas de mapa" "Mapa base: OpenStreetMap o un proveedor de teselas." "Externo"
+        teselas = softwareSystem "Servicio de teselas de mapa" "Mapa base: OpenStreetMap o un proveedor de teselas. Externo: queda fuera de la medida de [QA-R2]." "Externo"
 
         # Personas
         ciudadano -> sismo.pwa "Envía reportes de daños con foto y ubicación" "HTTPS"
@@ -59,6 +68,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         sismo.pwa -> sismo.api.reportes "Envía reportes de daños" "HTTPS/JSON"
         sismo.pwa -> sismo.api.mapa "Pide el mapa de daños" "HTTPS/JSON"
         sismo.pwa -> sismo.api.brigadas "Consulta y actualiza asignaciones" "HTTPS/JSON"
+        sismo.pwa -> sismo.api.dispositivos "Pide su identificador firmado; el panel lista los dispositivos sospechosos" "HTTPS/JSON"
 
         # Dependencias entre componentes (paquetes.puml, líneas 40-54). Sin ciclos:
         # mapa y brigadas -> priorización -> reportes -> compartido.
@@ -75,12 +85,17 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
         sismo.api.reportes -> sismo.api.compartido "Usa Ubicacion y ColaTrabajos" "Llamada en proceso"
 
+        # ADR-008: reportes y priorización usan Dispositivos; Dispositivos no depende de ellos.
+        sismo.api.reportes -> sismo.api.dispositivos "Verifica la firma y el límite por dispositivo" "Llamada en proceso"
+        sismo.api.priorizacion -> sismo.api.dispositivos "Excluye los dispositivos sospechosos" "Llamada en proceso"
+
         # Dependencias hacia otros contenedores
         sismo.api.reportes -> sismo.bd "Guarda el reporte y su trabajo en una transacción" "SQL/TCP"
         sismo.api.reportes -> sismo.fotos "Guarda la foto original" "E/S de archivos"
         sismo.api.priorizacion -> sismo.bd "Lee reportes por zona y las zonas priorizadas" "SQL/TCP"
         sismo.api.brigadas -> sismo.bd "Lee y escribe brigadas y asignaciones" "SQL/TCP"
-        sismo.api.mapa -> sismo.bd "Lee reportes agrupados por zona" "SQL/TCP"
+        sismo.api.mapa -> sismo.bd "Lee reportes agrupados por zona con GROUP BY" "SQL/TCP"
+        sismo.api.dispositivos -> sismo.bd "Guarda los dispositivos y cuenta sus reportes de los últimos 10 min" "SQL/TCP"
         sismo.api.compartido -> sismo.bd "Inserta trabajos en la tabla de trabajos (ColaTrabajos)" "SQL/TCP"
 
         produccion = deploymentEnvironment "Producción" {
@@ -104,7 +119,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
                 droplet = deploymentNode "Droplet Basic" "1 vCPU, 2 GiB de RAM, 50 GiB de SSD y 2 000 GiB de transferencia. US$ 12/mes más respaldos diarios (30 %): US$ 3,60/mes." "Ubuntu 24.04 LTS" {
 
-                    proxy = infrastructureNode "Proxy inverso" "Termina TLS 1.2 o superior (QA-03), recibe las subidas lentas y limita las peticiones."
+                    proxy = infrastructureNode "Proxy inverso" "Termina TLS 1.2 o superior [QA-S1], recibe las subidas lentas, comprime las respuestas JSON (ADR-007) [QA-R2] y expone la ocupación de conexiones que activa el modo pico (ADR-006) [QA-D1]." "TLS 1.2+ y gzip"
 
                     python = deploymentNode "Entorno de ejecución Python" "Dos servicios de systemd con un entorno virtual compartido, sin Docker." "Python 3.12 y systemd" {
                         api = containerInstance sismo.api

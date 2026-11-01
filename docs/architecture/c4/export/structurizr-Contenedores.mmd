@@ -4,27 +4,27 @@ graph LR
   subgraph diagram ["Container View: SismoReporta AQP"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.<br />Fuente de [QA-D1] y [QA-S1].</div>"]
     style 1 fill:#08427b,stroke:#052e56,color:#ffffff
-    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado.</div>"]
+    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado. No es<br />fuente de ningún escenario<br />del árbol de utilidad.</div>"]
     style 2 fill:#08427b,stroke:#052e56,color:#ffffff
-    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas. Fuente de [QA-R2];<br />revisa los dispositivos<br />sospechosos [QA-S2].</div>"]
     style 3 fill:#08427b,stroke:#052e56,color:#ffffff
-    15["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
-    style 15 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    16["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.<br />Externo: queda fuera de la<br />medida de [QA-R2].</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
 
     subgraph 4 ["SismoReporta AQP"]
       style 4 fill:#ffffff,stroke:#0b4884,color:#0b4884
 
-      12["<div style='font-weight: bold'>Worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Procesa fotos y recalcula la<br />priorización de forma<br />periódica.</div>"]
-      style 12 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      13[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos.</div>")]
+      13["<div style='font-weight: bold'>Worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Procesa fotos y recalcula la<br />priorización de forma<br />periódica. En modo pico solo<br />recalcula la priorización y<br />deja las fotos para después<br />(ADR-006) [QA-D1].</div>"]
       style 13 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      14[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+      14[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Reportes, usuarios,<br />consentimientos, zonas,<br />asignaciones y la tabla de<br />trabajos [QA-D1]. Índices por<br />zona y región para el mapa<br />[QA-R2]; dispositivo_id en<br />cada reporte y tabla de<br />dispositivos [QA-S2].</div>")]
       style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      5["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión.</div>"]
+      15[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado<br />[QA-D3]. En modo pico deja de<br />crecer (ADR-006) [QA-D1].</div>")]
+      style 15 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      5["<div style='font-weight: bold'>Aplicación web progresiva</div><div style='font-size: 70%; margin-top: 0px'>[Container: JavaScript, CSS, Service Worker e IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Interfaz de los tres roles.<br />Guarda los reportes sin señal<br />en una cola local y los<br />reenvía al recuperar la<br />conexión; en modo pico deja<br />la foto para después<br />(ADR-006) [QA-D1]. Envía el<br />identificador de dispositivo<br />firmado (ADR-008) [QA-S2]. El<br />panel dibuja un marcador por<br />zona (ADR-007) [QA-R2].</div>"]
       style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      6["<div style='font-weight: bold'>API</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Monolito modular: ingesta<br />idempotente, mapa,<br />priorización y brigadas.</div>"]
+      6["<div style='font-weight: bold'>API</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python]</div><div style='font-size: 80%; margin-top:10px'>Monolito modular: ingesta<br />idempotente con modo pico<br />[QA-D1], mapa agregado por<br />zona [QA-R2], control de<br />roles [QA-S1], límite por<br />dispositivo [QA-S2],<br />priorización y brigadas.</div>"]
       style 6 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
@@ -32,10 +32,10 @@ graph LR
     2-. "<div>Consulta su asignación y<br />marca su estado</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
     3-. "<div>Revisa el mapa y asigna<br />brigadas</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
     5-. "<div>Envía reportes y consultas, a<br />través del proxy inverso</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->6
-    5-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->15
-    6-. "<div>Lee y escribe datos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
-    6-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->14
-    12-. "<div>Toma trabajos con SKIP LOCKED<br />y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->13
-    12-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->14
+    5-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->16
+    6-. "<div>Lee y escribe datos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    6-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->15
+    13-. "<div>Toma trabajos con SKIP LOCKED<br />y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    13-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->15
 
   end

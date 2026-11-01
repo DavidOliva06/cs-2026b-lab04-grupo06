@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 750" width="760" height="750" role="img" aria-labelledby="t d">
+<title id="t">Matriz de probabilidad e impacto</title>
+<desc id="d">15 riesgos de atam-lite.md; zona crítica cuando probabilidad × impacto ≥ 6.</desc>
+<style>
+  svg { --superficie: #fcfcfb; --texto: #0b0b0b; --texto-2: #52514e; --critica: #d03b3b; --media: #fab219; --baja: #e4e3df; }
+  @media (prefers-color-scheme: dark) {
+    svg { --superficie: #1a1a19; --texto: #f0efec; --texto-2: #c3c2b7; --baja: #3a3a37; }
+  }
+  .fondo { fill: var(--superficie); }
+  text { font-family: Helvetica, Arial, sans-serif; fill: var(--texto); }
+  .encabezado { font-size: 16px; font-weight: bold; }
+  .eje, .nota { font-size: 12px; fill: var(--texto-2); }
+  .titulo-eje { font-size: 13px; font-weight: bold; fill: var(--texto-2); }
+  .zona { font-size: 12px; font-weight: bold; }
+  .riesgo { font-size: 14px; font-weight: bold; }
+  .celda { stroke: var(--superficie); stroke-width: 2; }
+  .zona-crítica { fill: var(--critica); fill-opacity: 0.30; }
+  .zona-media { fill: var(--media); fill-opacity: 0.30; }
+  .zona-baja { fill: var(--baja); fill-opacity: 0.60; }
+</style>
+<rect class="fondo" width="760" height="750"/>
+<text class="encabezado" x="150" y="32">Matriz de probabilidad e impacto (ATAM-lite)</text>
+<text class="nota" x="150" y="54">Cada celda indica su zona y su puntaje P × I; zona crítica: P × I ≥ 6.</text>
+<rect class="celda zona-media" x="150" y="90" width="186" height="186" rx="4"/>
+<text class="zona" x="160" y="110">Media (3)</text>
+<text class="riesgo" x="164" y="142">R-15</text>
+<rect class="celda zona-crítica" x="340" y="90" width="186" height="186" rx="4"/>
+<text class="zona" x="350" y="110">Crítica (6)</text>
+<text class="riesgo" x="354" y="142">R-01</text>
+<text class="riesgo" x="412" y="142">R-11</text>
+<rect class="celda zona-crítica" x="530" y="90" width="186" height="186" rx="4"/>
+<text class="zona" x="540" y="110">Crítica (9)</text>
+<text class="riesgo" x="544" y="142">R-03</text>
+<rect class="celda zona-baja" x="150" y="280" width="186" height="186" rx="4"/>
+<text class="zona" x="160" y="300">Baja (2)</text>
+<text class="riesgo" x="164" y="332">R-07</text>
+<text class="riesgo" x="222" y="332">R-09</text>
+<rect class="celda zona-media" x="340" y="280" width="186" height="186" rx="4"/>
+<text class="zona" x="350" y="300">Media (4)</text>
+<text class="riesgo" x="354" y="332">R-04</text>
+<text class="riesgo" x="412" y="332">R-12</text>
+<rect class="celda zona-crítica" x="530" y="280" width="186" height="186" rx="4"/>
+<text class="zona" x="540" y="300">Crítica (6)</text>
+<text class="riesgo" x="544" y="332">R-02</text>
+<text class="riesgo" x="602" y="332">R-05</text>
+<text class="riesgo" x="660" y="332">R-10</text>
+<text class="riesgo" x="544" y="358">R-14</text>
+<rect class="celda zona-baja" x="150" y="470" width="186" height="186" rx="4"/>
+<text class="zona" x="160" y="490">Baja (1)</text>
+<rect class="celda zona-baja" x="340" y="470" width="186" height="186" rx="4"/>
+<text class="zona" x="350" y="490">Baja (2)</text>
+<text class="riesgo" x="354" y="522">R-08</text>
+<rect class="celda zona-media" x="530" y="470" width="186" height="186" rx="4"/>
+<text class="zona" x="540" y="490">Media (3)</text>
+<text class="riesgo" x="544" y="522">R-06</text>
+<text class="riesgo" x="602" y="522">R-13</text>
+<text class="eje" x="245.0" y="682" text-anchor="middle">Baja</text>
+<text class="eje" x="138" y="565.0" text-anchor="end">Baja</text>
+<text class="eje" x="435.0" y="682" text-anchor="middle">Media</text>
+<text class="eje" x="138" y="375.0" text-anchor="end">Media</text>
+<text class="eje" x="625.0" y="682" text-anchor="middle">Alta</text>
+<text class="eje" x="138" y="185.0" text-anchor="end">Alta</text>
+<text class="titulo-eje" x="435.0" y="708" text-anchor="middle">Impacto</text>
+<text class="titulo-eje" x="24" y="375.0" text-anchor="middle" transform="rotate(-90 24 375.0)">Probabilidad</text>
+<text class="nota" x="150" y="738">Fuente: docs/architecture/riesgos/matriz_riesgos.py</text>
+</svg>
