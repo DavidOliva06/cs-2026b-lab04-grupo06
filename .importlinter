@@ -1,0 +1,79 @@
+# Fitness functions estructurales (Lab 08, E5): reglas de ADR-001 y ADR-005 sobre src/modulo.
+# Ejecutar desde la raíz del repositorio:
+#   Linux/macOS: PYTHONPATH=src:src/modulo lint-imports
+#   Windows:     $env:PYTHONPATH="src;src/modulo"; $env:PYTHONUTF8="1"; lint-imports
+#   (si lint-imports no está en el PATH: python -c "from importlinter.cli import lint_imports_command as l; l()")
+# `externos` (servicios simulados: IndexedDB, HTTP, PostgreSQL, LLM) se importa como paquete
+# de nivel superior, así que se trata como externo.
+
+[importlinter]
+root_packages =
+    modulo
+include_external_packages = True
+
+[importlinter:contract:adr001-ingesta-sin-ia]
+name = ADR-001: la ingesta solo valida, guarda y responde; no llama al clasificador de IA
+type = forbidden
+source_modules =
+    modulo.entrada
+    modulo.servicio
+    modulo.fabrica
+    modulo.adaptadores
+    modulo.decoradores
+    modulo.puertos
+    modulo.modelo
+    modulo.estados
+    modulo.eventos
+forbidden_modules =
+    modulo.ia
+
+[importlinter:contract:adr001-ia-aislada]
+name = ADR-001: el componente de IA es un módulo con límites propios; no depende del flujo de reportes
+type = forbidden
+source_modules =
+    modulo.ia
+forbidden_modules =
+    modulo.entrada
+    modulo.servicio
+    modulo.fabrica
+    modulo.adaptadores
+    modulo.decoradores
+    modulo.puertos
+    modulo.modelo
+    modulo.estados
+    modulo.eventos
+    modulo.antes
+
+[importlinter:contract:adr005-capas]
+name = ADR-005: las dependencias van en un solo sentido (entrada > servicio > fábrica > adaptadores y decoradores > puertos > modelo)
+type = layers
+containers =
+    modulo
+layers =
+    entrada
+    servicio
+    fabrica
+    adaptadores | decoradores
+    puertos | estados | eventos
+    modelo
+
+[importlinter:contract:adr005-servicio-sin-infraestructura]
+name = ADR-005: el servicio y el dominio dependen de puertos, no de adaptadores ni de servicios externos
+type = forbidden
+source_modules =
+    modulo.servicio
+    modulo.decoradores
+    modulo.puertos
+    modulo.modelo
+    modulo.estados
+    modulo.eventos
+    modulo.ia.puerto
+    modulo.ia.cache
+    modulo.ia.guardrails
+forbidden_modules =
+    externos
+    modulo.adaptadores
+    modulo.ia.adaptador_llm
+# La fábrica es el único punto que crea adaptadores, así que servicio -> fábrica -> adaptadores es válido.
+# entrada.py no está en source_modules: es la capa que traduce HTTP y puede conocer externos.
+allow_indirect_imports = True

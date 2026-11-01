@@ -13,9 +13,10 @@ AREQUIPA = (-16.3989, -71.5350)
 
 # Versión -> módulo que se importa. "antes" está en src/modulo/antes; "después" es la
 # raíz src/modulo, que se importa como paquete (modulo) porque usa imports relativos.
+# En "después", entrada.py reúne la interfaz pública del flujo (servicio, ingesta y controlador).
 VERSIONES = {
     "antes.servicio": "antes.servicio",
-    "despues.servicio": "modulo.servicio",
+    "despues.entrada": "modulo.entrada",
 }
 
 

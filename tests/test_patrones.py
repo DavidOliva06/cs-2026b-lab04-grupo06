@@ -1,7 +1,7 @@
 """Pruebas de los patrones de la versión después (Strategy + Adapter + Factory).
 
 Abierto/cerrado: se agrega una variante nueva de un puerto sin modificar servicio.py,
-fabrica.py ni adaptadores.py. La variante vive solo en este archivo, se registra en
+entrada.py, fabrica.py ni adaptadores.py. La variante vive solo en este archivo, se registra en
 la fábrica y el servicio la usa a través del puerto. La versión antes no tiene
 puertos, así que estas pruebas solo corren sobre la versión después.
 """
@@ -11,7 +11,7 @@ import externos
 from modulo.fabrica import fabrica_por_defecto
 from modulo.modelo import Reporte
 from modulo.puertos import AlmacenServidorReportes
-from modulo.servicio import URL_INGESTA, Ciudadano, ServicioIngesta, ServicioReportes
+from modulo.entrada import URL_INGESTA, Ciudadano, ServicioIngesta, ServicioReportes
 
 FOTO = b"\xff\xd8\xff foto de prueba"
 AREQUIPA = (-16.3989, -71.5350)
