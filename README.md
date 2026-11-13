@@ -1,8 +1,9 @@
-# <Nombre del caso> — Laboratorio 04: Fundamentos de arquitectura de software
+# SismoReporta AQP — Laboratorios de Construcción de Software
 Construcción de Software · EPIS-UNSA · 2026-B · Grupo 06
 ## Integrantes
 | Nombre | Rol en el laboratorio (p. ej., redactor de ADR, diagramador, verificador de IA) |
-|Oliva Valdivia David Alexander|Desarrollador,verificador de IA |
+|---|---|
+| Oliva Valdivia David Alexander | Desarrollador, verificador de IA |
 ## Caso
 SismoReporta AQP es una plataforma de reporte ciudadano de daños tras un sismo en Arequipa, pensada para apoyar a Defensa Civil.
 El ciudadano envía reportes con foto y geolocalización desde una PWA que funciona sin señal y los reenvía al recuperarla.
@@ -96,8 +97,9 @@ flowchart TB
 ```
 ## Decisiones arquitectónicas
 - [ADR-001: Estilo arquitectónico](docs/architecture/adr/001-estilo-arquitectonico.md)
-- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-traajos-en-postgresql.md)
-- [ADR-003: ...](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-trabajos-en-postgresql.md)
+- [ADR-003: PWA offline-first](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md)
 ## Diseño UML (Lab 05)
 
 Diseño detallado de la historia [HU-01: Enviar un reporte sin señal y sincronizarlo](docs/design/historia.md).
@@ -125,28 +127,29 @@ stateDiagram-v2
     Rechazado --> [*]
 ```
 
-Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd)
+Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd) · Imagen: [Estados-EstadoReporte.png](docs/design/img/Estados-EstadoReporte.png)
 
 ### Demás diagramas
 
 | Diagrama | Fuente | Imagen |
 |---|---|---|
-| Clases | [clases.puml](docs/design/clases.puml) | [clases.png](docs/design/img/clases.png) |
-| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [secuencia-reporte.png](docs/design/img/secuencia-reporte.png) |
+| Clases | [clases.puml](docs/design/clases.puml) | [DiagramadeClases.png](docs/design/img/DiagramadeClases.png) |
+| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [Secuencia-Reporte.png](docs/design/img/Secuencia-Reporte.png) |
 | Actividades | [actividades-brigada.puml](docs/design/actividades-brigada.puml) | [actividades-brigada.png](docs/design/img/actividades-brigada.png) |
 | Paquetes | [paquetes.puml](docs/design/paquetes.puml) | [paquetes.png](docs/design/img/paquetes.png) |
-| Clases generadas desde el código | [classes_en.puml](docs/design/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
+| Clases generadas desde el código | [classes_en.puml](src/modulo/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
 
 ### Código y verificación
 
-- [reportes.py](src/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
+- [reportes.py](src/modulo/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
 - [round-trip.md](docs/design/round-trip.md): diferencias entre el diagrama de diseño y el generado desde el código.
-- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas.
+- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas, con los falsos positivos y el estado de las correcciones.
+- [verificar_c1.py](docs/design/verificar_c1.py): comprueba que cada mensaje de la secuencia sea una operación de su clase receptora (regla C1).
 - [bitacora-ia.md](docs/design/bitacora-ia.md): registro de las interacciones con la IA.
 - [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md): resolución del ciclo entre priorización y brigadas.
 ## Arquitectura C4 (Lab 06)
 
-Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.dsl), validado y exportado con Structurizr CLI.
+Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.dsl), validado y exportado con Structurizr CLI. Los elementos salen de [inventario.md](docs/architecture/c4/inventario.md).
 
 ### Diagrama de contexto
 
@@ -154,7 +157,7 @@ Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.
 graph LR
   linkStyle default fill:#ffffff
 
-  subgraph diagram ["System Context View: SismoReporta AQP"]
+  subgraph diagram ["SismoReporta AQP - Diagrama de contexto (nivel 1)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
     1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
@@ -176,17 +179,25 @@ graph LR
   end
 ```
 
-Fuente: [structurizr-Contexto.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd)
+Fuente: [structurizr-Contexto.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) (copiado sin cambios de `export/`).
 
 ### Vistas
 
-| Vista | Imagen |
-|---|---|
-| Contexto | [structurizr-Contexto.png](docs/architecture/c4/img/structurizr-Contexto.png) |
-| Contenedores | [structurizr-Contenedores.png](docs/architecture/c4/img/structurizr-Contenedores.png) |
-| Componentes de la API | [structurizr-Componentes.png](docs/architecture/c4/img/structurizr-Componentes.png) |
-| Dinámica: SincronizarReporte (HU-01) | [structurizr-SincronizarReporte.png](docs/architecture/c4/img/structurizr-SincronizarReporte.png) |
-| Despliegue en Producción | [structurizr-Despliegue.png](docs/architecture/c4/img/structurizr-Despliegue.png) |
+| Vista | Imagen | C4-PlantUML | Mermaid |
+|---|---|---|---|
+| Contexto | [structurizr-Contexto.png](docs/architecture/c4/img/structurizr-Contexto.png) | [.puml](docs/architecture/c4/export/structurizr-Contexto.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) |
+| Contenedores | [structurizr-Contenedores.png](docs/architecture/c4/img/structurizr-Contenedores.png) | [.puml](docs/architecture/c4/export/structurizr-Contenedores.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contenedores.mmd) |
+| Componentes de la API | [structurizr-Componentes.png](docs/architecture/c4/img/structurizr-Componentes.png) | [.puml](docs/architecture/c4/export/structurizr-Componentes.puml) | [.mmd](docs/architecture/c4/export/structurizr-Componentes.mmd) |
+| Dinámica: SincronizarReporte (HU-01) | [structurizr-SincronizarReporte.png](docs/architecture/c4/img/structurizr-SincronizarReporte.png) | [.puml](docs/architecture/c4/export/structurizr-SincronizarReporte.puml) | [.mmd](docs/architecture/c4/export/structurizr-SincronizarReporte.mmd) |
+| Despliegue en Producción | [structurizr-Despliegue.png](docs/architecture/c4/img/structurizr-Despliegue.png) | [.puml](docs/architecture/c4/export/structurizr-Despliegue.puml) | [.mmd](docs/architecture/c4/export/structurizr-Despliegue.mmd) |
+
+### Revisión y comunicación
+
+- [revision-c4.md](docs/architecture/c4/revision-c4.md): lista de revisión oficial aplicada a las cinco vistas.
+- [verificar_c4.py](docs/architecture/c4/verificar_c4.py): comprueba descripciones, tecnologías, componentes frente a `paquetes.puml`, ciclos e instancias de despliegue.
+- [comparacion.md](docs/architecture/c4/comparacion.md): secuencia UML frente a vista dinámica, y escritura a mano ([contexto-manual.puml](docs/architecture/c4/contexto-manual.puml)) frente a modelo exportado.
+- [explicacion.md](docs/architecture/c4/explicacion.md): explicación para el público general (115 palabras).
+- [bitacora-ia.md](docs/architecture/c4/bitacora-ia.md): 8 interacciones con la IA.
 
 ## Patrones de diseño (Lab 07)
 

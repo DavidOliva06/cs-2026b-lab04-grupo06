@@ -1,6 +1,9 @@
 @startuml
 title Proceso: Priorización y asignación de brigadas
 
+' Cambio tras la validación con un compañero del curso: cada reporte pasa por
+' "verificado" antes de "atendido", como exige el diagrama de estados.
+
 |Sistema|
 start
 
@@ -31,6 +34,7 @@ repeat
         :Revisar el daño de un reporte;
         if (¿El daño es real?) then (sí)
           :Marcar el reporte como verificado;
+          note right: Paso agregado tras la validación
           :Atender el daño;
           :Marcar el reporte como atendido;
         else (no)

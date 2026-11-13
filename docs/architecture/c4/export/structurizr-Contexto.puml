@@ -1,5 +1,5 @@
 @startuml
-title <size:24>System Context View: SismoReporta AQP</size>\n<size:24>Diagrama de contexto de SismoReporta AQP.</size>
+title <size:24>SismoReporta AQP - Diagrama de contexto (nivel 1)</size>\n<size:24>Diagrama de contexto de SismoReporta AQP.</size>
 
 set separator none
 left to right direction
@@ -14,16 +14,22 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 
-Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo.", $tags="", $link="")
-System(Serviciodeteselasdemapa, "Servicio de teselas de mapa", $descr="Mapa base: OpenStreetMap o un proveedor de teselas.", $tags="", $link="")
-Person(Brigadista, "Brigadista", $descr="Atiende las zonas asignadas y actualiza su estado.", $tags="", $link="")
-Person(Coordinador, "Coordinador", $descr="Revisa el mapa de daños, prioriza zonas y asigna brigadas.", $tags="", $link="")
-System(SismoReportaAQP, "SismoReporta AQP", $descr="Recibe reportes de daños, prioriza zonas y asigna brigadas.", $tags="", $link="")
+AddElementTag("Software System,Externo", $bgColor="#999999", $borderColor="#6b6b6b", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
+AddElementTag("Software System", $bgColor="#1168bd", $borderColor="#0b4884", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
+AddElementTag("Person", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
 
-Rel(Ciudadano, SismoReportaAQP, "Envía reportes de daños con foto y ubicación", $techn="HTTPS", $tags="", $link="")
-Rel(Brigadista, SismoReportaAQP, "Consulta su asignación y marca su estado", $techn="HTTPS", $tags="", $link="")
-Rel(Coordinador, SismoReportaAQP, "Revisa el mapa y asigna brigadas", $techn="HTTPS", $tags="", $link="")
-Rel(SismoReportaAQP, Serviciodeteselasdemapa, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="", $link="")
+AddRelTag("Relationship", $textColor="#444444", $lineColor="#444444", $lineStyle = DashedLine())
+
+Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo.", $tags="Person", $link="")
+System(Serviciodeteselasdemapa, "Servicio de teselas de mapa", $descr="Mapa base: OpenStreetMap o un proveedor de teselas.", $tags="Software System,Externo", $link="")
+Person(Brigadista, "Brigadista", $descr="Atiende las zonas asignadas y actualiza su estado.", $tags="Person", $link="")
+Person(Coordinador, "Coordinador", $descr="Revisa el mapa de daños, prioriza zonas y asigna brigadas.", $tags="Person", $link="")
+System(SismoReportaAQP, "SismoReporta AQP", $descr="Recibe reportes de daños, prioriza zonas y asigna brigadas.", $tags="Software System", $link="")
+
+Rel(Ciudadano, SismoReportaAQP, "Envía reportes de daños con foto y ubicación", $techn="HTTPS", $tags="Relationship", $link="")
+Rel(Brigadista, SismoReportaAQP, "Consulta su asignación y marca su estado", $techn="HTTPS", $tags="Relationship", $link="")
+Rel(Coordinador, SismoReportaAQP, "Revisa el mapa y asigna brigadas", $techn="HTTPS", $tags="Relationship", $link="")
+Rel(SismoReportaAQP, Serviciodeteselasdemapa, "Obtiene el mapa base", $techn="HTTPS/PNG", $tags="Relationship", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes
