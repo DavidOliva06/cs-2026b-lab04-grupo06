@@ -42,6 +42,32 @@ La mayoría de los hallazgos tiene una misma causa: el diagrama de secuencia no 
 
 En `secuencia-reporte.puml:17-20` la foto y la ubicación ya viajan en el mensaje antes de comprobar el consentimiento, pero el criterio 4 de la historia dice que sin consentimiento no se capturan. La comprobación debería ocurrir antes de la captura.
 
+## Verificación de los hallazgos
+
+Cada hallazgo se contrastó con los diagramas, la historia y los drivers. Siete no se sostienen:
+
+| Regla | Hallazgo de la IA | Verificación |
+|---|---|---|
+| C3 | `id` de `Reporte` sin `{unique}` (`clases.puml:29`). | Falso positivo: la unicidad no es una multiplicidad, y el criterio 3 ya se cubre con `guardarSiNoExiste()`. |
+| C4 | La nota de `paquetes.puml:59` describe una cadena estricta. | Falso positivo: la cadena describe el orden de las capas y las dependencias directas lo respetan. |
+| C4 | Brigadas usa la entidad `Reporte` de otro módulo (`paquetes.puml:45`). | Falso positivo: la regla 3 permite usar clases públicas y `Reporte` lo es. |
+| C5 | Renombrar "Atendido" de la asignación a "Finalizada" (`actividades-brigada.puml:41`). | Falso positivo: el nombre viene de RF-05 ("en camino, atendido"); renombrarlo rompería la trazabilidad con los drivers. |
+| C5 | `Borrador` frente a `BORRADOR` entre estados y enumeración. | Falso positivo: es el mismo nombre con la convención de cada notación. |
+| C5 | `Ciudadano`, `Consentimiento` y `Foto` fuera de los paquetes. | Falso positivo: un diagrama de paquetes no lista todas las clases y el alcance está declarado en su comentario. |
+| C2 | `crearReporte()` en la transición inicial (`estado-estadoReporte.mmd:5`). | Discutible: es habitual etiquetar la transición inicial con el evento que crea el objeto. Se mantiene. |
+
+Otros tres hallazgos son reales pero estaban en la regla equivocada (falta de `encolar()`, reporte creado sin ciudadano y estados de `Asignacion`).
+
 ## Estado de las correcciones
 
-Los hallazgos están reportados, pero ninguno se ha corregido todavía en los diagramas.
+Aplicadas en la rama `lab05-correcciones` (etiqueta `v0.5.1-diseno`) y comprobadas con `docs/design/verificar_c1.py`, que pasó de 6 mensajes sin operación a 0:
+
+- C1: `marcarEnviado(fecha)` pasa a `marcarRecibido(fecha)`, y se agrega `encolar()` después de crear el reporte.
+- C1: `ControladorReportes` y `FormularioReporte` se agregan a `clases.puml` con sus operaciones.
+- C5: `PENDIENTE_DE_ENVIO` y `ENVIADO` pasan a `ENCOLADO` y `RECIBIDO`.
+- C3: el reporte se crea con su ciudadano: `Reporte(id, ciudadano, foto, ubicacion)`.
+
+Pendientes:
+
+- C2: `recibir()` y `enviar()` en el diagrama de estados no son operaciones de `Reporte`.
+- Fuera de las reglas: la foto y la ubicación viajan antes de comprobar el consentimiento (criterio 4).
