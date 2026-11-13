@@ -1,8 +1,9 @@
-# <Nombre del caso> — Laboratorio 04: Fundamentos de arquitectura de software
+# SismoReporta AQP — Laboratorios de Construcción de Software
 Construcción de Software · EPIS-UNSA · 2026-B · Grupo 06
 ## Integrantes
 | Nombre | Rol en el laboratorio (p. ej., redactor de ADR, diagramador, verificador de IA) |
-|Oliva Valdivia David Alexander|Desarrollador,verificador de IA |
+|---|---|
+| Oliva Valdivia David Alexander | Desarrollador, verificador de IA |
 ## Caso
 SismoReporta AQP es una plataforma de reporte ciudadano de daños tras un sismo en Arequipa, pensada para apoyar a Defensa Civil.
 El ciudadano envía reportes con foto y geolocalización desde una PWA que funciona sin señal y los reenvía al recuperarla.
@@ -96,8 +97,9 @@ flowchart TB
 ```
 ## Decisiones arquitectónicas
 - [ADR-001: Estilo arquitectónico](docs/architecture/adr/001-estilo-arquitectonico.md)
-- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-traajos-en-postgresql.md)
-- [ADR-003: ...](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-trabajos-en-postgresql.md)
+- [ADR-003: PWA offline-first](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md)
 ## Diseño UML (Lab 05)
 
 Diseño detallado de la historia [HU-01: Enviar un reporte sin señal y sincronizarlo](docs/design/historia.md).
@@ -125,23 +127,24 @@ stateDiagram-v2
     Rechazado --> [*]
 ```
 
-Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd)
+Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd) · Imagen: [Estados-EstadoReporte.png](docs/design/img/Estados-EstadoReporte.png)
 
 ### Demás diagramas
 
 | Diagrama | Fuente | Imagen |
 |---|---|---|
-| Clases | [clases.puml](docs/design/clases.puml) | [clases.png](docs/design/img/clases.png) |
-| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [secuencia-reporte.png](docs/design/img/secuencia-reporte.png) |
+| Clases | [clases.puml](docs/design/clases.puml) | [DiagramadeClases.png](docs/design/img/DiagramadeClases.png) |
+| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [Secuencia-Reporte.png](docs/design/img/Secuencia-Reporte.png) |
 | Actividades | [actividades-brigada.puml](docs/design/actividades-brigada.puml) | [actividades-brigada.png](docs/design/img/actividades-brigada.png) |
 | Paquetes | [paquetes.puml](docs/design/paquetes.puml) | [paquetes.png](docs/design/img/paquetes.png) |
-| Clases generadas desde el código | [classes_en.puml](docs/design/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
+| Clases generadas desde el código | [classes_en.puml](src/modulo/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
 
 ### Código y verificación
 
-- [reportes.py](src/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
+- [reportes.py](src/modulo/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
 - [round-trip.md](docs/design/round-trip.md): diferencias entre el diagrama de diseño y el generado desde el código.
-- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas.
+- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas, con los falsos positivos y el estado de las correcciones.
+- [verificar_c1.py](docs/design/verificar_c1.py): comprueba que cada mensaje de la secuencia sea una operación de su clase receptora (regla C1).
 - [bitacora-ia.md](docs/design/bitacora-ia.md): registro de las interacciones con la IA.
 - [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md): resolución del ciclo entre priorización y brigadas.
 ## Reflexión sobre el uso de la IA (5–8 líneas)

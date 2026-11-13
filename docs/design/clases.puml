@@ -49,6 +49,22 @@ class Ubicacion {
   - longitud: Double
 }
 
+' Agregadas por la regla C1 (consistencia.md): receptoras de mensajes del diagrama de secuencia.
+class FormularioReporte <<UI de la PWA>> {
+  + mostrarEstado(estado: EstadoReporte): void
+  + mostrarConsentimiento(): void
+}
+
+class ControladorReportes {
+  + enviarReporte(foto: Foto, ubicacion: Ubicacion): void
+  + alRecuperarConexion(): void
+}
+
+' Agregadas por el round-trip (diferencia 1): adaptadores que implementan los puertos.
+class AdaptadorAlmacenLocalReportes
+class AdaptadorAlmacenServidorReportes
+class AdaptadorEnvioReportes
+
 ' Lado del celular: crea el reporte, lo guarda y lo reenvía (criterios 1, 2 y 4).
 class ServicioReportes {
   + crearReporte(ciudadano: Ciudadano, foto: Foto, ubicacion: Ubicacion): Reporte
@@ -80,16 +96,24 @@ interface PuertoEnvioReportes <<puerto>> {
   + enviar(reporte: Reporte): Boolean
 }
 
-Ciudadano "1" *-- "1" Consentimiento
-Ciudadano "1" -- "0..*" Reporte : registra >
-Reporte "1" *-- "1" Foto
-Reporte "1" *-- "1" Ubicacion
+' Nombres de rol iguales a los atributos del código (round-trip, diferencia 7).
+Ciudadano "1" *-- "1" Consentimiento : consentimiento
+Ciudadano "1 ciudadano" -- "0..* reportes" Reporte : registra >
+Reporte "1" *-- "1" Foto : foto
+Reporte "1" *-- "1" Ubicacion : ubicacion
 Reporte "0..*" --> "1" EstadoReporte : estado
+
+FormularioReporte "1" -- "1" ControladorReportes
+ControladorReportes "1" --> "1" ServicioReportes : servicio
 
 ServicioReportes ..> Ciudadano : verifica consentimiento
 ServicioReportes ..> Reporte : crea
-ServicioReportes "1" --> "1" AlmacenLocalReportes
-ServicioReportes "1" --> "1" PuertoEnvioReportes
-ServicioIngesta "1" --> "1" AlmacenServidorReportes
+ServicioReportes "1" --> "1" AlmacenLocalReportes : almacen_local
+ServicioReportes "1" --> "1" PuertoEnvioReportes : puerto_envio
+ServicioIngesta "1" --> "1" AlmacenServidorReportes : almacen_servidor
 ServicioIngesta ..> Reporte : recibe
+
+AdaptadorAlmacenLocalReportes ..|> AlmacenLocalReportes
+AdaptadorAlmacenServidorReportes ..|> AlmacenServidorReportes
+AdaptadorEnvioReportes ..|> PuertoEnvioReportes
 @enduml
