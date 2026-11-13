@@ -395,3 +395,24 @@ Verificación y corrección:
 - No hay hallazgos recibidos: el equipo no realizó E3 (revisión cruzada). La IA no los inventó; atam-lite.md lo indica.
 - Las probabilidades e impactos son una propuesta de la IA a partir de la evidencia de las iteraciones; el equipo debe
   revisarlos.
+
+## 14. Prompt 14 (Lab 08, revisión del 2026-11-13) Revisión de la entrega
+    Prompt:
+    Revisa la entrega del Lab 08 contra la guía y la crítica del informe: E1–E7 sin evidencia en texto, E8 sin
+    evidencia, sin evaluación cruzada y restos del escenario de RutaSIT.
+    Respuesta:
+    .github/workflows/fitness.yml y tests/test_fitness.py estaban vacíos (0 bytes), así que E5.3 y E5.4 no se
+    habían cumplido y el README no tenía insignia; no existía la etiqueta v0.8-arquitectura; paquetes.puml no tenía
+    el módulo dispositivos de ADR-008; y el cuestionario del informe tenía las preguntas del Lab 05.
+Verificación y corrección:
+- Se escribieron 8 fitness functions de calidad y el workflow. Para comprobar que no pasan "porque sí", cada una
+  verifica también que la versión sin la táctica no cumple, y 4 mutaciones (quitar ON CONFLICT, el modo pico, el
+  mapa agregado y el límite de 10) hacen fallar una prueba cada una.
+- La violación estructural se hizo en una rama, como pide la guía, con la salida de lint-imports documentada en
+  fitness.md (2 de 4 contratos rotos) y revertida.
+- La salida de lint-imports mostró que la violación servicio → adaptadores **no** rompe el contrato de capas (va
+  hacia abajo, y las capas lo permiten); la detecta adr005-servicio-sin-infraestructura. Se documentó en fitness.md
+  para que nadie quite ese contrato pensando que el de capas ya lo cubre.
+- El restante "300 a 1 200 buses" solo queda en la interacción 7 de esta bitácora, donde se registra como error de
+  contexto; se quitó del informe.
+

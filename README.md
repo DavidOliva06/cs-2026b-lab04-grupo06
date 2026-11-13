@@ -160,21 +160,21 @@ graph LR
   subgraph diagram ["SismoReporta AQP - Diagrama de contexto (nivel 1)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.<br />Fuente de [QA-D1] y [QA-S1].</div>"]
     style 1 fill:#08427b,stroke:#052e56,color:#ffffff
-    15["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
-    style 15 fill:#999999,stroke:#6b6b6b,color:#ffffff
-    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado.</div>"]
+    16["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.<br />Externo: queda fuera de la<br />medida de [QA-R2].</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado. No es<br />fuente de ningún escenario<br />del árbol de utilidad.</div>"]
     style 2 fill:#08427b,stroke:#052e56,color:#ffffff
-    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas. Fuente de [QA-R2];<br />revisa los dispositivos<br />sospechosos [QA-S2].</div>"]
     style 3 fill:#08427b,stroke:#052e56,color:#ffffff
-    4["<div style='font-weight: bold'>SismoReporta AQP</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Recibe reportes de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    4["<div style='font-weight: bold'>SismoReporta AQP</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Recibe reportes de daños,<br />prioriza zonas y asigna<br />brigadas. [QA-D1] [QA-R2]<br />[QA-S1] [QA-S2]</div>"]
     style 4 fill:#1168bd,stroke:#0b4884,color:#ffffff
 
     1-. "<div>Envía reportes de daños con<br />foto y ubicación</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
     2-. "<div>Consulta su asignación y<br />marca su estado</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
     3-. "<div>Revisa el mapa y asigna<br />brigadas</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
-    4-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->15
+    4-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->16
 
   end
 ```
@@ -234,6 +234,8 @@ Medidas con radon (`radon cc -s -a` y `radon raw -s`) sobre el código actual, s
 
 ## Diseño de la arquitectura (Lab 08)
 
+[![fitness](https://github.com/DavidOliva06/cs-2026b-lab04-grupo06/actions/workflows/fitness.yml/badge.svg)](https://github.com/DavidOliva06/cs-2026b-lab04-grupo06/actions/workflows/fitness.yml)
+
 Escenario de crecimiento: simulacro nacional, con 20 000 reportes en 1 hora y la red móvil congestionada. El atributo crítico es la disponibilidad.
 
 ### Árbol de utilidad
@@ -250,7 +252,26 @@ Fuente: [arbol.dot](docs/architecture/utilidad/arbol.dot). Los 13 escenarios can
 | [2](docs/architecture/add/iteracion-2.md) | **R2** (H,H), rendimiento: carga del mapa p95 ≤ 3 s, filtro p95 ≤ 1 s y retraso ≤ 60 s, con 30 coordinadores | Aumentar la eficiencia: API del mapa agregada por zona y comprimida con gzip ([ADR-007](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)) | Prototipo de medición [prototipo_r2.py](fitness/prototipo_r2.py): carga del mapa p95 de 13,46 s a 1,00 s; respuesta de 826 KB a 28 KB | **Sí** |
 | [3](docs/architecture/add/iteracion-3.md) | **S2** (H,M), seguridad: 1 000 reportes falsos en 5 min desde un dispositivo | Identificar actores, y detectar y reaccionar: límite y un voto por dispositivo ([ADR-008](docs/architecture/adr/008-identificador-de-dispositivo.md)) | Simulación por conteo [simulacion_s2.py](fitness/simulacion_s2.py), más una comparación de alternativas para el código por SMS: reportes falsos aceptados de 1 000 a 10, zonas alteradas de 5 a 0 y 100 % de legítimos aceptados | **Sí**, salvo un ataque Sybil, aceptado como riesgo residual |
 
-Los riesgos, puntos de sensibilidad y puntos de trade-off están en [atam-lite.md](docs/architecture/atam-lite.md). Las reglas estructurales de ADR-001 y ADR-005 se verifican con import-linter ([.importlinter](.importlinter)).
+Los riesgos, puntos de sensibilidad y puntos de trade-off están en [atam-lite.md](docs/architecture/atam-lite.md), con la [matriz de probabilidad e impacto](docs/architecture/riesgos/matriz-riesgos.svg).
+
+### Fitness functions
+
+El workflow [fitness.yml](.github/workflows/fitness.yml) las ejecuta en cada Pull Request. Detalle, salida de la violación de prueba y mutaciones en [fitness.md](docs/architecture/fitness.md).
+
+| Tipo | Fitness function | Escenario o regla |
+|---|---|---|
+| Estructural | 4 contratos de import-linter en [.importlinter](.importlinter) | ADR-001 (ingesta sin IA, IA aislada) y ADR-005 (capas, servicio sin infraestructura) |
+| De calidad | `test_d1_modo_pico_...` en [test_fitness.py](tests/test_fitness.py) | D1: ≥ 99,5 % guardados ≤ 15 min, con 1 núcleo y una caída de 10 min |
+| De calidad | `test_r2_mapa_agrupado_...` | R2: carga del mapa p95 ≤ 3 s, filtro p95 ≤ 1 s, retraso ≤ 60 s |
+| De calidad | `test_s2_limite_y_voto_...` | S2: ≤ 10 reportes aceptados por dispositivo y 0 zonas alteradas |
+| De calidad | `test_ingesta_no_pierde_ni_duplica_...` | 0 reportes perdidos o duplicados con respuestas perdidas |
+
+La violación de prueba está en la rama `prueba-violacion-fitness` (commits `3fd719e` y `117b86b`): rompe 2 de los 4 contratos y se revirtió.
+
+### Evaluación cruzada y entrega
+
+- **ATAM-lite cruzado (E3):** no se realizó; el laboratorio se desarrolló de forma individual y no hay issue enviado ni recibido. [atam-lite.md](docs/architecture/atam-lite.md) registra solo hallazgos propios.
+- **Etiqueta:** `v0.8-arquitectura`.
 
 ### ADR del Lab 08
 

@@ -9,7 +9,7 @@
 | Origen de los hallazgos | Cantidad |
 |---|---|
 | Propios: iteraciones de ADD, E5 (fitness functions) y E6 (ADR y C4) | 15 riesgos, 7 puntos de sensibilidad, 5 puntos de trade-off y 6 no riesgos |
-| Recibidos de otro grupo | **Ninguno.** El equipo no realizó E3 (revisión cruzada), así que no hay hallazgos externos que registrar |
+| Recibidos de otro grupo | **Ninguno.** E3 (ATAM-lite cruzado) no se realizó: el laboratorio se desarrolló de forma individual, sin otro grupo asignado, así que no hubo issue enviado ni recibido |
 
 ## 2. Riesgos
 
@@ -81,3 +81,14 @@ Escala: Baja = 1, Media = 2 y Alta = 3. **Zona crítica: probabilidad × impacto
 | NR-4 | La carga del mapa no depende del volumen de reportes | 40 000 reportes: 1,01 s con T5 (iteración 2) |
 | NR-5 | El aviso de un dispositivo atacante llega a tiempo | 4 s frente al límite de 300 s (iteración 3) |
 | NR-6 | Mantener el estilo de ADR-001 es suficiente para D1, R2 y S2 | Las tres tácticas aceptadas se implementan dentro de los contenedores existentes (workspace.dsl) |
+
+## 7. Revisión del 2026-11-13
+
+| Hallazgo | Estado anterior | Estado actual |
+|---|---|---|
+| R-15: documentación desactualizada tras separar `entrada.py` | Riesgo Medio (3) | **Mitigado:** el README, `clases.puml` (40 clases, 0 diferencias con pyreverse) y `.importlinter` (incluye `observadores.py`) se actualizaron al fusionar las correcciones de los labs 05 a 07. |
+| `paquetes.puml` no tenía el módulo `dispositivos` de ADR-008, aunque `workspace.dsl` sí | No detectado | **Corregido:** `verificar_c4.py` daba 2 fallas; se agregó el paquete con sus 2 dependencias y ahora da 0. |
+| E5.3 y E5.4: `tests/test_fitness.py` y `.github/workflows/fitness.yml` estaban vacíos | No detectado | **Corregido:** 8 fitness functions de calidad (D1, R2, S2 y 0 operaciones perdidas) y el workflow en cada Pull Request ([fitness.md](fitness.md)). |
+| NR-2: reglas estructurales vigiladas | Solo con una mutación local | Ahora también en CI, con la violación de prueba documentada en la rama `prueba-violacion-fitness`. |
+| R-02: evidencia de modelos, sin prueba de carga real | Mitigación planificada | **Sin cambio:** las fitness functions de D1 y S2 vigilan los modelos, no el sistema desplegado; la de R2 mide consultas reales, pero en SQLite. |
+

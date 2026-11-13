@@ -37,6 +37,13 @@ package "mapa" as mapa {
   class ServicioMapa
 }
 
+' Lab 08 (ADR-008): módulo nuevo para el escenario S2. Se agregó el 2026-11-13, al detectar
+' con verificar_c4.py que workspace.dsl tenía el componente Dispositivos y este diagrama no.
+package "dispositivos" as dispositivos {
+  class ServicioDispositivos
+  class DispositivoSospechoso <<evento>>
+}
+
 mapa ..> priorizacion : usa ZonaPriorizada
 mapa ..> reportes : usa ConsultaReportes
 mapa ..> compartido : usa Zona
@@ -49,6 +56,8 @@ priorizacion ..> reportes : usa ConsultaReportes
 priorizacion ..> compartido : usa Zona y ColaTrabajos
 
 reportes ..> compartido : usa Ubicacion y ColaTrabajos
+reportes ..> dispositivos : verifica la firma y el límite
+priorizacion ..> dispositivos : excluye a los sospechosos
 
 ' Resolución del ciclo (ADR-004): brigadas implementa el puerto que define priorización.
 ServicioAsignacion ..|> ConsultaZonasAsignadas : implementa
@@ -56,8 +65,8 @@ ServicioAsignacion ..|> ConsultaZonasAsignadas : implementa
 note as ReglaDependencias
   Regla de dependencias
   1. Las dependencias van en un solo sentido:
-     mapa y brigadas -> priorización -> reportes -> compartido.
-  2. El paquete compartido no depende de ningún módulo.
+     mapa y brigadas -> priorización -> reportes -> compartido y dispositivos.
+  2. Los paquetes compartido y dispositivos no dependen de ningún módulo.
   3. Un módulo usa de otro solo sus puertos y clases públicas,
      nunca sus tablas ni sus clases internas.
   4. No se permiten ciclos. Si un módulo necesita datos de otro
