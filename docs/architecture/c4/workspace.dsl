@@ -27,8 +27,8 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             api = container "API" "Monolito modular: ingesta idempotente, mapa, priorización y brigadas." "Python" {
                 # Un componente por paquete de docs/design/paquetes.puml (Lab 05).
                 compartido = component "Compartido" "Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos." "Python"
-                reportes = component "Reportes" "Ingesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes." "Python"
-                priorizacion = component "Priorización" "Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (ADR-004)." "Python"
+                reportes = component "Reportes" "Ingesta idempotente por identificador único (UUID) en ServicioIngesta, y los puertos AlmacenServidorReportes y ConsultaReportes." "Python"
+                priorizacion = component "Priorización" "Calcula ZonaPriorizada y define el puerto ConsultaZonasAsignadas (decisión de arquitectura ADR-004)." "Python"
                 brigadas = component "Brigadas" "Brigada, Asignacion y ServicioAsignacion; implementa ConsultaZonasAsignadas." "Python"
                 mapa = component "Mapa" "ServicioMapa: arma el mapa de daños agrupado por zonas." "Python"
             }
@@ -37,7 +37,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
 
             bd = container "Base de datos" "Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos." "PostgreSQL" "Database"
 
-            fotos = container "Almacenamiento de fotos" "Fotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado." "Sistema de archivos" "Database"
+            fotos = container "Almacenamiento de fotos" "Fotos de los reportes comprimidas y sin metadatos EXIF (fecha, cámara y coordenadas GPS), en un volumen separado." "Sistema de archivos" "Database"
         }
 
         teselas = softwareSystem "Servicio de teselas de mapa" "Mapa base: OpenStreetMap o un proveedor de teselas." "Externo"
@@ -52,8 +52,8 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         sismo.pwa -> teselas "Obtiene el mapa base" "HTTPS/PNG"
         sismo.api -> sismo.bd "Lee y escribe datos" "SQL/TCP"
         sismo.api -> sismo.fotos "Guarda la foto original" "E/S de archivos"
-        sismo.worker -> sismo.bd "Toma trabajos con SKIP LOCKED y guarda las zonas priorizadas" "SQL/TCP"
-        sismo.worker -> sismo.fotos "Redimensiona las fotos y elimina los metadatos EXIF" "E/S de archivos"
+        sismo.worker -> sismo.bd "Toma trabajos con SKIP LOCKED (sin que dos procesos tomen el mismo) y guarda las zonas priorizadas" "SQL/TCP"
+        sismo.worker -> sismo.fotos "Redimensiona las fotos y elimina los metadatos EXIF (fecha, cámara y GPS)" "E/S de archivos"
 
         # Componentes de la API: entradas desde la PWA
         sismo.pwa -> sismo.api.reportes "Envía reportes de daños" "HTTPS/JSON"
@@ -66,7 +66,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         sismo.api.mapa -> sismo.api.reportes "Usa ConsultaReportes" "Llamada en proceso"
         sismo.api.mapa -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
 
-        sismo.api.brigadas -> sismo.api.priorizacion "Usa ZonaPriorizada e implementa ConsultaZonasAsignadas (ADR-004)" "Llamada en proceso"
+        sismo.api.brigadas -> sismo.api.priorizacion "Usa ZonaPriorizada e implementa ConsultaZonasAsignadas (decisión ADR-004)" "Llamada en proceso"
         sismo.api.brigadas -> sismo.api.reportes "Usa Reporte: verificar, rechazar, marcarAtendido" "Llamada en proceso"
         sismo.api.brigadas -> sismo.api.compartido "Usa Zona" "Llamada en proceso"
 
@@ -88,7 +88,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             # Costo mensual (R-03, US$ 20-30): droplet US$ 12 + respaldos diarios US$ 3,60 + volumen US$ 10 = US$ 25,60.
             # No se usa Docker: el entorno de ejecución son procesos de Python administrados por systemd.
 
-            celular = deploymentNode "Celular del ciudadano o del brigadista" "Celular de gama baja con red móvil intermitente (R-05)." "Android" {
+            celular = deploymentNode "Celular del ciudadano o del brigadista" "Celular de gama baja con red móvil intermitente (restricción R-05 de drivers.md)." "Android" {
                 navegador = deploymentNode "Navegador web" "Ejecuta la PWA y guarda la cola local en IndexedDB." "Chrome para Android" {
                     pwa = containerInstance sismo.pwa
                 }
@@ -100,18 +100,18 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
                 }
             }
 
-            nube = deploymentNode "DigitalOcean" "Proveedor de nube. Región fuera de la zona sísmica de Arequipa." "Región Nueva York (NYC3)" {
+            nube = deploymentNode "DigitalOcean" "Proveedor de nube. Región fuera de la zona sísmica de Arequipa." "Región Nueva York 3 (NYC3)" {
 
                 droplet = deploymentNode "Droplet Basic" "1 vCPU, 2 GiB de RAM, 50 GiB de SSD y 2 000 GiB de transferencia. US$ 12/mes más respaldos diarios (30 %): US$ 3,60/mes." "Ubuntu 24.04 LTS" {
 
-                    proxy = infrastructureNode "Proxy inverso" "Termina TLS 1.2 o superior (QA-03), recibe las subidas lentas y limita las peticiones."
+                    proxy = infrastructureNode "Proxy inverso" "Termina TLS 1.2 o superior (escenario de seguridad QA-03 de drivers.md), recibe las subidas lentas y limita las peticiones. Producto pendiente de un ADR."
 
                     python = deploymentNode "Entorno de ejecución Python" "Dos servicios de systemd con un entorno virtual compartido, sin Docker." "Python 3.12 y systemd" {
                         api = containerInstance sismo.api
                         worker = containerInstance sismo.worker
                     }
 
-                    postgres = deploymentNode "Servidor PostgreSQL" "Instalado en el mismo droplet; no es un servicio administrado (R-03)." "PostgreSQL 16" {
+                    postgres = deploymentNode "Servidor PostgreSQL" "Instalado en el mismo droplet; no es un servicio administrado (restricción de presupuesto R-03 de drivers.md)." "PostgreSQL 16" {
                         bd = containerInstance sismo.bd
                     }
 
@@ -121,7 +121,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
                 }
             }
 
-            externo = deploymentNode "Proveedor de teselas" "Servicio externo de mapas, no desplegado por el equipo." "Internet" "Externo" {
+            externo = deploymentNode "Proveedor de teselas" "Servicio externo de mapas, no desplegado por el equipo." "Internet" "Nodo externo" {
                 teselas = softwareSystemInstance teselas
             }
 
@@ -132,24 +132,34 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
     }
 
     views {
+        # Exporta las etiquetas a C4-PlantUML: sin esto, "Externo" se pierde y el servicio
+        # de teselas sale azul como un sistema propio (pregunta 7 del informe).
+        properties {
+            "c4plantuml.tags" "true"
+        }
+
         systemContext sismo "Contexto" "Diagrama de contexto de SismoReporta AQP." {
+            title "SismoReporta AQP - Diagrama de contexto (nivel 1)"
             include *
             autolayout lr
         }
 
         container sismo "Contenedores" "Diagrama de contenedores de SismoReporta AQP." {
+            title "SismoReporta AQP - Diagrama de contenedores (nivel 2)"
             include *
             autolayout lr
         }
 
         component sismo.api "Componentes" "Componentes del contenedor API, uno por paquete de paquetes.puml." {
+            title "SismoReporta AQP - Componentes de la API (nivel 3)"
             include *
             autolayout lr
         }
-        
-         dynamic sismo.api "SincronizarReporte" "HU-01: enviar un reporte sin señal y sincronizarlo." {
+
+        dynamic sismo.api "SincronizarReporte" "HU-01: enviar un reporte sin señal y sincronizarlo." {
+            title "SismoReporta AQP - Vista dinámica: sincronizar un reporte (HU-01)"
             ciudadano -> sismo.pwa "Registra el reporte con foto y ubicación; sin señal queda en la cola local"
-            sismo.pwa -> sismo.api.reportes "Al recuperar la señal, envía cada reporte pendiente con su UUID"
+            sismo.pwa -> sismo.api.reportes "Al recuperar la señal, envía cada reporte pendiente con su identificador único (UUID)"
             sismo.api.reportes -> sismo.bd "Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)"
             sismo.api.reportes -> sismo.fotos "Guarda la foto original"
             sismo.api.reportes -> sismo.api.compartido "Encola el procesamiento de la foto mediante ColaTrabajos"
@@ -158,6 +168,7 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
         }
 
         deployment sismo "Producción" "Despliegue" "Despliegue en el entorno Producción." {
+            title "SismoReporta AQP - Despliegue en Producción (US$ 25,60 al mes)"
             include *
             exclude "produccion.celular.navegador.pwa -> produccion.nube.droplet.python.api"
             exclude "produccion.computadora.navegador.pwa -> produccion.nube.droplet.python.api"
@@ -195,6 +206,14 @@ workspace "SismoReporta AQP" "Reporte ciudadano de daños tras un sismo, en apoy
             element "Externo" {
                 background #999999
                 color #ffffff
+            }
+            # Nodo de despliegue externo: texto oscuro, porque Mermaid dibuja los nodos con
+            # fondo blanco y con "Externo" el nombre quedaba blanco sobre blanco.
+            element "Nodo externo" {
+                background #eeeeee
+                color #444444
+                stroke #6b6b6b
+                border dashed
             }
         }
     }

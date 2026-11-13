@@ -147,6 +147,58 @@ Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd) · Imag
 - [verificar_c1.py](docs/design/verificar_c1.py): comprueba que cada mensaje de la secuencia sea una operación de su clase receptora (regla C1).
 - [bitacora-ia.md](docs/design/bitacora-ia.md): registro de las interacciones con la IA.
 - [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md): resolución del ciclo entre priorización y brigadas.
+## Arquitectura C4 (Lab 06)
+
+Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.dsl), validado y exportado con Structurizr CLI. Los elementos salen de [inventario.md](docs/architecture/c4/inventario.md).
+
+### Diagrama de contexto
+
+```mermaid
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["SismoReporta AQP - Diagrama de contexto (nivel 1)"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+    15["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
+    style 15 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado.</div>"]
+    style 2 fill:#08427b,stroke:#052e56,color:#ffffff
+    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    style 3 fill:#08427b,stroke:#052e56,color:#ffffff
+    4["<div style='font-weight: bold'>SismoReporta AQP</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Recibe reportes de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    style 4 fill:#1168bd,stroke:#0b4884,color:#ffffff
+
+    1-. "<div>Envía reportes de daños con<br />foto y ubicación</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
+    2-. "<div>Consulta su asignación y<br />marca su estado</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
+    3-. "<div>Revisa el mapa y asigna<br />brigadas</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
+    4-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->15
+
+  end
+```
+
+Fuente: [structurizr-Contexto.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) (copiado sin cambios de `export/`).
+
+### Vistas
+
+| Vista | Imagen | C4-PlantUML | Mermaid |
+|---|---|---|---|
+| Contexto | [structurizr-Contexto.png](docs/architecture/c4/img/structurizr-Contexto.png) | [.puml](docs/architecture/c4/export/structurizr-Contexto.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) |
+| Contenedores | [structurizr-Contenedores.png](docs/architecture/c4/img/structurizr-Contenedores.png) | [.puml](docs/architecture/c4/export/structurizr-Contenedores.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contenedores.mmd) |
+| Componentes de la API | [structurizr-Componentes.png](docs/architecture/c4/img/structurizr-Componentes.png) | [.puml](docs/architecture/c4/export/structurizr-Componentes.puml) | [.mmd](docs/architecture/c4/export/structurizr-Componentes.mmd) |
+| Dinámica: SincronizarReporte (HU-01) | [structurizr-SincronizarReporte.png](docs/architecture/c4/img/structurizr-SincronizarReporte.png) | [.puml](docs/architecture/c4/export/structurizr-SincronizarReporte.puml) | [.mmd](docs/architecture/c4/export/structurizr-SincronizarReporte.mmd) |
+| Despliegue en Producción | [structurizr-Despliegue.png](docs/architecture/c4/img/structurizr-Despliegue.png) | [.puml](docs/architecture/c4/export/structurizr-Despliegue.puml) | [.mmd](docs/architecture/c4/export/structurizr-Despliegue.mmd) |
+
+### Revisión y comunicación
+
+- [revision-c4.md](docs/architecture/c4/revision-c4.md): lista de revisión oficial aplicada a las cinco vistas.
+- [verificar_c4.py](docs/architecture/c4/verificar_c4.py): comprueba descripciones, tecnologías, componentes frente a `paquetes.puml`, ciclos e instancias de despliegue.
+- [comparacion.md](docs/architecture/c4/comparacion.md): secuencia UML frente a vista dinámica, y escritura a mano ([contexto-manual.puml](docs/architecture/c4/contexto-manual.puml)) frente a modelo exportado.
+- [explicacion.md](docs/architecture/c4/explicacion.md): explicación para el público general (115 palabras).
+- [bitacora-ia.md](docs/architecture/c4/bitacora-ia.md): 8 interacciones con la IA.
+
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
 En definitiva el trabajo se agilizo utilizandolas para los procesos que no se tiene tanto conocimiento como el uso de mermaid y de puml.

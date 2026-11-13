@@ -1,7 +1,7 @@
 graph LR
   linkStyle default fill:#ffffff
 
-  subgraph diagram ["Deployment View: SismoReporta AQP - Producción"]
+  subgraph diagram ["SismoReporta AQP - Despliegue en Producción (US$ 25,60 al mes)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
     subgraph 47 ["Celular del ciudadano o del brigadista"]
@@ -34,7 +34,7 @@ graph LR
       subgraph 54 ["Droplet Basic"]
         style 54 fill:#ffffff,stroke:#444444,color:#444444
 
-        55["<div style='font-weight: bold'>Proxy inverso</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node]</div><div style='font-size: 80%; margin-top:10px'>Termina TLS 1.2 o superior<br />(QA-03), recibe las subidas<br />lentas y limita las<br />peticiones.</div>"]
+        55["<div style='font-weight: bold'>Proxy inverso</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node]</div><div style='font-size: 80%; margin-top:10px'>Termina TLS 1.2 o superior<br />(escenario de seguridad QA-03<br />de drivers.md), recibe las<br />subidas lentas y limita las<br />peticiones. Producto<br />pendiente de un ADR.</div>"]
         style 55 fill:#ffffff,stroke:#b2b2b2,color:#000000
         subgraph 56 ["Entorno de ejecución Python"]
           style 56 fill:#ffffff,stroke:#444444,color:#444444
@@ -55,7 +55,7 @@ graph LR
         subgraph 65 ["Volumen de bloques"]
           style 65 fill:#ffffff,stroke:#444444,color:#444444
 
-          66[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado.</div>")]
+          66[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF (fecha, cámara y<br />coordenadas GPS), en un<br />volumen separado.</div>")]
           style 66 fill:#438dd5,stroke:#2e6295,color:#ffffff
         end
 
@@ -64,16 +64,16 @@ graph LR
     end
 
     subgraph 69 ["Proveedor de teselas"]
-      style 69 fill:#ffffff,stroke:#6b6b6b,color:#ffffff
+      style 69 fill:#ffffff,stroke:#6b6b6b,color:#444444
 
       70["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
       style 70 fill:#999999,stroke:#6b6b6b,color:#ffffff
     end
 
     57-. "<div>Lee y escribe datos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->62
-    60-. "<div>Toma trabajos con SKIP LOCKED<br />y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->62
+    60-. "<div>Toma trabajos con SKIP LOCKED<br />(sin que dos procesos tomen<br />el mismo) y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->62
     57-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->66
-    60-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->66
+    60-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF<br />(fecha, cámara y GPS)</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->66
     49-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->70
     52-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->70
     49-. "<div>Envía reportes y consultas</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->55

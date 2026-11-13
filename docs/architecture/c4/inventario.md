@@ -6,7 +6,7 @@
 | SismoReporta AQP | Sistema de software | Caso (README.md) |
 | Servicio de teselas de mapa (OpenStreetMap o proveedor) | Sistema externo | Diagrama de arquitectura (Lab 04) |
 | Aplicación web progresiva (PWA), con la cola local en IndexedDB | Contenedor | ADR-003 (Lab 04) |
-| Proxy inverso | Contenedor | Diagrama de arquitectura (Lab 04) |
+| Proxy inverso | Nodo de infraestructura (vista de despliegue) | Diagrama de arquitectura (Lab 04) |
 | API (monolito modular en Python) | Contenedor | ADR-001 (Lab 04) |
 | Worker en segundo plano | Contenedor | ADR-001 (Lab 04) |
 | Base de datos PostgreSQL, con la cola de trabajos | Contenedor | ADR-001 y ADR-002 (Lab 04) |
@@ -25,5 +25,5 @@
 - **IndexedDB:** forma parte del contenedor PWA, porque vive en el navegador y no se despliega por separado.
 - **Cola de trabajos:** no es un contenedor propio, sino una tabla de PostgreSQL (ADR-002).
 - **API y worker:** son contenedores distintos aunque compartan código, porque se ejecutan como procesos separados (ADR-001).
-- **Proxy inverso:** es un contenedor de infraestructura que solo se configura, no se programa.
+- **Proxy inverso:** no es un contenedor, porque solo se configura y no se programa. Va como nodo de infraestructura en la vista de despliegue (corregido el 2026-11-13: la primera versión lo clasificaba como contenedor y contradecía a `workspace.dsl`).
 - **Diagrama de arquitectura:** es el diagrama Mermaid de `docs/architecture/diagramas/`, también embebido en el README.
