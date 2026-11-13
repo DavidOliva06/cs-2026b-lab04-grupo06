@@ -1,120 +1,55 @@
 @startuml
-title <size:24>Dynamic View: SismoReporta AQP - API</size>\n<size:24>HU-01: enviar un reporte sin señal y sincronizarlo.</size>
+title <size:24>SismoReporta AQP - Vista dinámica: sincronizar un reporte (HU-01)</size>\n<size:24>HU-01: enviar un reporte sin señal y sincronizarlo.</size>
 
 set separator none
 left to right direction
-skinparam ranksep 60
-skinparam nodesep 30
-hide stereotype
 
 <style>
   root {
-    BackgroundColor: #ffffff;
-    FontColor: #444444;
-  }
-  // Element,Component
-  .Element-RWxlbWVudCxDb21wb25lbnQ= {
-    BackgroundColor: #85bbf0;
-    LineColor: #5d82a8;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #000000;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
-    MaximumWidth: 450;
-  }
-  // Element,Container,Database
-  .Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U= {
-    BackgroundColor: #438dd5;
-    LineColor: #2e6295;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #ffffff;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
-    MaximumWidth: 450;
-  }
-  // Element,Container,Web Browser
-  .Element-RWxlbWVudCxDb250YWluZXIsV2ViIEJyb3dzZXI= {
-    BackgroundColor: #438dd5;
-    LineColor: #2e6295;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #ffffff;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
-    MaximumWidth: 450;
-  }
-  // Element,Person
-  .Element-RWxlbWVudCxQZXJzb24= {
-    BackgroundColor: #08427b;
-    LineColor: #052e56;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #ffffff;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
-    MaximumWidth: 450;
-  }
-  // Relationship
-  .Relationship-UmVsYXRpb25zaGlw {
-    LineThickness: 2;
-    LineStyle: 10-10;
-    LineColor: #444444;
-    FontColor: #444444;
-    FontSize: 24;
-  }
-  // API
-  .Boundary-QVBJ {
-    BackgroundColor: #ffffff;
-    LineColor: #2e6295;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #ffffff;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
-  }
-  // SismoReporta AQP
-  .Boundary-U2lzbW9SZXBvcnRhIEFRUA== {
-    BackgroundColor: #ffffff;
-    LineColor: #0b4884;
-    LineStyle: 0;
-    LineThickness: 2;
-    FontColor: #ffffff;
-    FontSize: 24;
-    HorizontalAlignment: center;
-    Shadowing: 0;
+    BackgroundColor: #ffffff
+    FontColor: #444444
   }
 </style>
 
-person "==Ciudadano\n<size:16>[Person]</size>\n\nReporta daños con foto y ubicación tras un sismo. Fuente de [QA-D1] y [QA-S1]." <<Element-RWxlbWVudCxQZXJzb24=>> as Ciudadano
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
 
-rectangle "SismoReporta AQP\n<size:16>[Software System]</size>" <<Boundary-U2lzbW9SZXBvcnRhIEFRUA==>> {
-  rectangle "API\n<size:16>[Container: Python]</size>" <<Boundary-QVBJ>> {
-    rectangle "==Compartido\n<size:16>[Component: Python]</size>\n\nTipos comunes Ubicacion y Zona, y el puerto ColaTrabajos: el reporte y su trabajo se guardan en una transacción [QA-D1]." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as SismoReportaAQP.API.Compartido
-    rectangle "==Reportes\n<size:16>[Component: Python]</size>\n\nIngesta idempotente por UUID (ServicioIngesta) y puertos AlmacenServidorReportes y ConsultaReportes [QA-D1]. En modo pico acepta solo los datos y difiere la foto (ADR-006) [QA-D1]; responde 429 al reporte n.º 11 de un dispositivo en 10 min (ADR-008) [QA-S2]." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as SismoReportaAQP.API.Reportes
+AddElementTag("Component", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid")
+AddElementTag("Container,Database", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
+AddElementTag("Person", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
+AddElementTag("Container,Web Browser", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid")
+
+AddRelTag("Relationship", $textColor="#444444", $lineColor="#444444", $lineStyle = DashedLine())
+
+AddBoundaryTag("Container", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid")
+
+Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo. Fuente de [QA-D1] y [QA-S1].", $tags="Person", $link="")
+
+System_Boundary("SismoReportaAQP_boundary", "SismoReporta AQP", $tags="Software System") {
+  Container_Boundary("SismoReportaAQP.API_boundary", "API", $tags="Container") {
+    Component(SismoReportaAQP.API.Compartido, "Compartido", $techn="Python", $descr="Tipos comunes Ubicacion y Zona, y el puerto ColaTrabajos: el reporte y su trabajo se guardan en una transacción [QA-D1].", $tags="Component", $link="")
+    Component(SismoReportaAQP.API.Reportes, "Reportes", $techn="Python", $descr="Ingesta idempotente por identificador único (UUID) en ServicioIngesta, y puertos AlmacenServidorReportes y ConsultaReportes [QA-D1]. En modo pico acepta solo los datos y difiere la foto (ADR-006) [QA-D1]; responde 429 al reporte n.º 11 de un dispositivo en 10 min (ADR-008) [QA-S2].", $tags="Component", $link="")
   }
 
-  database "==Base de datos\n<size:16>[Container: PostgreSQL]</size>\n\nReportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos [QA-D1]. Índices por zona y región para el mapa [QA-R2]; dispositivo_id en cada reporte y tabla de dispositivos [QA-S2]." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as SismoReportaAQP.Basededatos
-  database "==Almacenamiento de fotos\n<size:16>[Container: Sistema de archivos]</size>\n\nFotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado [QA-D3]. En modo pico deja de crecer (ADR-006) [QA-D1]." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as SismoReportaAQP.Almacenamientodefotos
-  rectangle "==Aplicación web progresiva\n<size:16>[Container: JavaScript, CSS, Service Worker e IndexedDB]</size>\n\nInterfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión; en modo pico deja la foto para después (ADR-006) [QA-D1]. Envía el identificador de dispositivo firmado (ADR-008) [QA-S2]. El panel dibuja un marcador por zona (ADR-007) [QA-R2]." <<Element-RWxlbWVudCxDb250YWluZXIsV2ViIEJyb3dzZXI=>> as SismoReportaAQP.Aplicaciónwebprogresiva
+  ContainerDb(SismoReportaAQP.Basededatos, "Base de datos", $techn="PostgreSQL", $descr="Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos [QA-D1]. Índices por zona y región para el mapa [QA-R2]; dispositivo_id en cada reporte y tabla de dispositivos [QA-S2].", $tags="Container,Database", $link="")
+  ContainerDb(SismoReportaAQP.Almacenamientodefotos, "Almacenamiento de fotos", $techn="Sistema de archivos", $descr="Fotos de los reportes comprimidas y sin metadatos EXIF (fecha, cámara y coordenadas GPS), en un volumen separado [QA-D3]. En modo pico deja de crecer (ADR-006) [QA-D1].", $tags="Container,Database", $link="")
+  Container(SismoReportaAQP.Aplicaciónwebprogresiva, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión; en modo pico deja la foto para después (ADR-006) [QA-D1]. Envía el identificador de dispositivo firmado (ADR-008) [QA-S2]. El panel dibuja un marcador por zona (ADR-007) [QA-R2].", $tags="Container,Web Browser", $link="")
 }
 
-person "==Ciudadano\n<size:16>[Person]</size>\n\nReporta daños con foto y ubicación tras un sismo. Fuente de [QA-D1] y [QA-S1]." <<Element-RWxlbWVudCxQZXJzb24=>> as Ciudadano
-rectangle "==Aplicación web progresiva\n<size:16>[Container: JavaScript, CSS, Service Worker e IndexedDB]</size>\n\nInterfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión; en modo pico deja la foto para después (ADR-006) [QA-D1]. Envía el identificador de dispositivo firmado (ADR-008) [QA-S2]. El panel dibuja un marcador por zona (ADR-007) [QA-R2]." <<Element-RWxlbWVudCxDb250YWluZXIsV2ViIEJyb3dzZXI=>> as SismoReportaAQP.Aplicaciónwebprogresiva
-database "==Base de datos\n<size:16>[Container: PostgreSQL]</size>\n\nReportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos [QA-D1]. Índices por zona y región para el mapa [QA-R2]; dispositivo_id en cada reporte y tabla de dispositivos [QA-S2]." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as SismoReportaAQP.Basededatos
-database "==Almacenamiento de fotos\n<size:16>[Container: Sistema de archivos]</size>\n\nFotos de los reportes comprimidas y sin metadatos EXIF, en un volumen separado [QA-D3]. En modo pico deja de crecer (ADR-006) [QA-D1]." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as SismoReportaAQP.Almacenamientodefotos
+Person(Ciudadano, "Ciudadano", $descr="Reporta daños con foto y ubicación tras un sismo. Fuente de [QA-D1] y [QA-S1].", $tags="Person", $link="")
+Container(SismoReportaAQP.Aplicaciónwebprogresiva, "Aplicación web progresiva", $techn="JavaScript, CSS, Service Worker e IndexedDB", $descr="Interfaz de los tres roles. Guarda los reportes sin señal en una cola local y los reenvía al recuperar la conexión; en modo pico deja la foto para después (ADR-006) [QA-D1]. Envía el identificador de dispositivo firmado (ADR-008) [QA-S2]. El panel dibuja un marcador por zona (ADR-007) [QA-R2].", $tags="Container,Web Browser", $link="")
+ContainerDb(SismoReportaAQP.Basededatos, "Base de datos", $techn="PostgreSQL", $descr="Reportes, usuarios, consentimientos, zonas, asignaciones y la tabla de trabajos [QA-D1]. Índices por zona y región para el mapa [QA-R2]; dispositivo_id en cada reporte y tabla de dispositivos [QA-S2].", $tags="Container,Database", $link="")
+ContainerDb(SismoReportaAQP.Almacenamientodefotos, "Almacenamiento de fotos", $techn="Sistema de archivos", $descr="Fotos de los reportes comprimidas y sin metadatos EXIF (fecha, cámara y coordenadas GPS), en un volumen separado [QA-D3]. En modo pico deja de crecer (ADR-006) [QA-D1].", $tags="Container,Database", $link="")
 
-Ciudadano --> SismoReportaAQP.Aplicaciónwebprogresiva <<Relationship-UmVsYXRpb25zaGlw>> : "1: Registra el reporte con foto y ubicación; sin señal queda en la cola local\n<size:16>[HTTPS]</size>"
-SismoReportaAQP.Aplicaciónwebprogresiva --> SismoReportaAQP.API.Reportes <<Relationship-UmVsYXRpb25zaGlw>> : "2: Al recuperar la señal, envía cada reporte pendiente con su UUID\n<size:16>[HTTPS/JSON]</size>"
-SismoReportaAQP.API.Reportes --> SismoReportaAQP.Basededatos <<Relationship-UmVsYXRpb25zaGlw>> : "3: Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)\n<size:16>[SQL/TCP]</size>"
-SismoReportaAQP.API.Reportes --> SismoReportaAQP.Almacenamientodefotos <<Relationship-UmVsYXRpb25zaGlw>> : "4: Guarda la foto original\n<size:16>[E/S de archivos]</size>"
-SismoReportaAQP.API.Reportes --> SismoReportaAQP.API.Compartido <<Relationship-UmVsYXRpb25zaGlw>> : "5: Encola el procesamiento de la foto mediante ColaTrabajos\n<size:16>[Llamada en proceso]</size>"
-SismoReportaAQP.API.Compartido --> SismoReportaAQP.Basededatos <<Relationship-UmVsYXRpb25zaGlw>> : "6: Inserta el trabajo en la misma transacción que el reporte\n<size:16>[SQL/TCP]</size>"
+Rel(Ciudadano, SismoReportaAQP.Aplicaciónwebprogresiva, "1: Registra el reporte con foto y ubicación; sin señal queda en la cola local", $techn="HTTPS", $tags="Relationship", $link="")
+Rel(SismoReportaAQP.Aplicaciónwebprogresiva, SismoReportaAQP.API.Reportes, "2: Al recuperar la señal, envía cada reporte pendiente con su identificador único (UUID)", $techn="HTTPS/JSON", $tags="Relationship", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.Basededatos, "3: Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)", $techn="SQL/TCP", $tags="Relationship", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.Almacenamientodefotos, "4: Guarda la foto original", $techn="E/S de archivos", $tags="Relationship", $link="")
+Rel(SismoReportaAQP.API.Reportes, SismoReportaAQP.API.Compartido, "5: Encola el procesamiento de la foto mediante ColaTrabajos", $techn="Llamada en proceso", $tags="Relationship", $link="")
+Rel(SismoReportaAQP.API.Compartido, SismoReportaAQP.Basededatos, "6: Inserta el trabajo en la misma transacción que el reporte", $techn="SQL/TCP", $tags="Relationship", $link="")
 
+SHOW_LEGEND(true)
+hide stereotypes
 @enduml

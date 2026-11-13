@@ -1,6 +1,6 @@
 # ADR-005: Patrones de diseño adoptados y rechazados en el flujo HU-01
 - Estado: Aceptado
-- Fecha: 2026-10-25
+- Fecha: 2026-10-25 (consecuencias actualizadas el 2026-11-13, al conectar el Observer y el Decorator y agregar sus pruebas)
 - Decisores: Oliva Valdivia David Alexander
 ## Contexto
 La versión `antes/servicio.py` resuelve la HU-01 en un solo archivo, pero el servicio conoce los detalles de cada servicio externo: diccionarios y base64 para IndexedDB, texto JSON y códigos de estado para HTTP, y SQL para PostgreSQL. Además, crea sus propias dependencias concretas y mezcla la lectura de HTTP con la lógica de negocio. Cambiar el almacenamiento o el canal de envío obliga a modificar el servicio. Los olores están detallados en `docs/design/patrones/olores.md`.
@@ -40,11 +40,15 @@ En `olores.md`, State y Observer figuran como rechazados para el flujo de sincro
 ## Consecuencias
 - Positivas:
   - El servicio ya no conoce IndexedDB, HTTP ni PostgreSQL. Una variante nueva se agrega con un adaptador registrado en la fábrica, sin modificar el servicio, como comprueba `tests/test_patrones.py`.
-  - Las 12 pruebas de caracterización pasan sobre las dos versiones (24 ejecuciones), así que el refactor conservó el comportamiento.
+  - Las 12 pruebas de caracterización pasan sobre las dos versiones (24 ejecuciones), así que el refactor conservó el comportamiento, incluidos los mensajes que ahora muestra el Observer.
   - El método más complejo del flujo, `sincronizar_pendientes`, bajó de 5 a 3 de complejidad ciclomática.
   - Una falla del LLM o una respuesta bloqueada por los guardrails no pierde el reporte: queda marcado para revisión humana.
 - Negativas / riesgos:
-  - El código creció: el flujo equivalente pasó de 1 a 7 archivos y de 189 a 331 líneas de código. La complejidad promedio subió de 1,67 a 1,77, porque los constructores con valores por defecto suman ramas.
-  - Hay más indirección: para seguir un envío hay que recorrer servicio, puerto, fábrica y adaptador.
-  - `EnvioConRegistro`, `Publicador` y `CicloReporte` todavía no están conectados al flujo, porque `servicio.py` no los usa.
-  - State, Observer, los dos Decorator y los guardrails no tienen pruebas automatizadas propias.
+  - El código creció: el flujo equivalente pasó de 1 a 8 archivos y de 189 a 381 líneas de código. La complejidad promedio subió de 1,67 a 1,88, porque los constructores con valores por defecto suman ramas y los mensajes pasaron a `VistaConsola.notificar` (5).
+  - Hay más indirección: para seguir un envío hay que recorrer servicio, puerto, fábrica, decorador y adaptador.
+  - `CicloReporte` (State) no está conectado a `servicio.py`: hacerlo cambiaría los estados `PENDIENTE_DE_ENVIO` y `ENVIADO` que fijan las pruebas de caracterización. Queda como cambio deliberado para otra iteración.
+- Pruebas que respaldan cada patrón (91 ejecuciones, todas pasan):
+  - Strategy + Adapter + Factory: `tests/test_patrones.py::test_open_closed_nuevo_almacen_del_servidor_sin_modificar_el_servicio`.
+  - State: `tests/test_estados.py` (41 ejecuciones: las 6 transiciones del diagrama y las 30 prohibidas, entre otras).
+  - Observer y Decorator de registro: 7 pruebas en `tests/test_patrones.py`.
+  - Componente de IA (adaptador, caché y guardrails): `tests/test_ia.py` (18 ejecuciones con un LLM simulado).

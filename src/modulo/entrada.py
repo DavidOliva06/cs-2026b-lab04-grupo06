@@ -12,7 +12,9 @@ from externos import RespuestaHttp, red_movil
 
 from .adaptadores import DSN_SERVIDOR, URL_INGESTA
 from .fabrica import FabricaEstrategias, fabrica_por_defecto
+from .eventos import Observador
 from .modelo import ENVIADO, PENDIENTE_DE_ENVIO, Ciudadano, Reporte
+from .observadores import ContadorPendientes, VistaConsola
 from .puertos import AlmacenServidorReportes
 from .servicio import ConsentimientoNoAceptado, ServicioReportes
 
@@ -76,33 +78,30 @@ class ServicioIngesta:
 
 
 class ControladorReportes:
-    def __init__(self, servicio: ServicioReportes) -> None:
+    """Conecta la PWA con el servicio. Ya no arma mensajes: los suscriptores reaccionan a los eventos."""
+
+    def __init__(
+        self,
+        servicio: ServicioReportes,
+        vista: Observador | None = None,
+        contador: ContadorPendientes | None = None,
+    ) -> None:
         self.servicio = servicio
+        self.vista = vista or VistaConsola()
+        self.contador = contador or ContadorPendientes()
+        servicio.suscribir(self.vista)
+        servicio.suscribir(self.contador)
 
     def enviar_reporte(
         self, ciudadano: Ciudadano, foto: bytes, ubicacion: tuple[float, float]
     ) -> Reporte | None:
         try:
-            reporte = self.servicio.crear_reporte(ciudadano, foto, ubicacion)
+            return self.servicio.crear_reporte(ciudadano, foto, ubicacion)
         except ConsentimientoNoAceptado:
-            self._mostrar_consentimiento()
             return None
-        self._mostrar_estado("Pendiente de envío")
-        return reporte
 
     def al_recuperar_conexion(self) -> None:
-        enviados = self.servicio.sincronizar_pendientes()
-        if enviados:
-            self._mostrar_estado(f"Enviado ({enviados} reporte(s))")
-        else:
-            self._mostrar_estado("Sigue pendiente de envío")
-
-    # INGENUO: la "pantalla" es un print dentro del controlador.
-    def _mostrar_estado(self, texto: str) -> None:
-        print(f"  [PWA] {texto}")
-
-    def _mostrar_consentimiento(self) -> None:
-        print("  [PWA] Debe aceptar el uso de su ubicación y sus fotos")
+        self.servicio.sincronizar_pendientes()
 
 
 # --- Demostración de los criterios de aceptación ----------------------------

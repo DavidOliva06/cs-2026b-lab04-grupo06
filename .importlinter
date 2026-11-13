@@ -24,6 +24,7 @@ source_modules =
     modulo.modelo
     modulo.estados
     modulo.eventos
+    modulo.observadores
 forbidden_modules =
     modulo.ia
 
@@ -42,16 +43,17 @@ forbidden_modules =
     modulo.modelo
     modulo.estados
     modulo.eventos
+    modulo.observadores
     modulo.antes
 
 [importlinter:contract:adr005-capas]
-name = ADR-005: las dependencias van en un solo sentido (entrada > servicio > fábrica > adaptadores y decoradores > puertos > modelo)
+name = ADR-005: las dependencias van en un solo sentido (entrada > servicio y observadores > fábrica > adaptadores y decoradores > puertos > modelo)
 type = layers
 containers =
     modulo
 layers =
     entrada
-    servicio
+    servicio | observadores
     fabrica
     adaptadores | decoradores
     puertos | estados | eventos
@@ -67,6 +69,7 @@ source_modules =
     modulo.modelo
     modulo.estados
     modulo.eventos
+    modulo.observadores
     modulo.ia.puerto
     modulo.ia.cache
     modulo.ia.guardrails

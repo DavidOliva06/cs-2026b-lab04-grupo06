@@ -2,7 +2,8 @@
 
 - Fecha: 2026-10-25
 - Herramienta: radon (`radon cc -s -a` para complejidad ciclomática y `radon raw -s` para líneas de código)
-- Alcance: `antes/servicio.py` frente a `despues/`. Las pruebas están fuera de la medición.
+- Alcance: `src/modulo/antes/servicio.py` frente a la versión después en `src/modulo/`. Las pruebas están fuera de la medición.
+- Verificado de nuevo el 2026-11-13 con radon 6.0.1 sobre el commit corregido: las cifras coinciden. La versión publicada el 2026-10-25 no tenía `observadores.py` ni el Observer conectado al servicio, así que su código no correspondía a esta tabla.
 - Para comparar lo mismo, "Después (flujo equivalente)" incluye solo los archivos que reemplazan a `antes/servicio.py`: `servicio`, `modelo`, `puertos`, `adaptadores`, `fabrica`, `eventos`, `observadores` y `decoradores`. La máquina de estados y el componente de IA son funciones nuevas y se miden aparte.
 
 ## Resumen
@@ -15,7 +16,7 @@
 | Después: componente de IA | 4 | 25 | A (2,56) | B (6): `FormatoValido._verificar` | 139 |
 | **Después (total)** | **13** | **125** | **A (1,87)** | **B (6): `FormatoValido._verificar`** | **594** |
 
-Pruebas: 12 pruebas de caracterización antes del refactor; 37 funciones de prueba después, que generan 90 ejecuciones gracias a la parametrización, y todas pasan.
+Pruebas: 12 pruebas de caracterización antes del refactor; 38 funciones de prueba después, que generan 91 ejecuciones gracias a la parametrización, y todas pasan (24 de caracterización, 41 de State, 8 de Strategy, Observer y Decorator, y 18 del componente de IA).
 
 ## Complejidad por método (misma responsabilidad, antes y después)
 
