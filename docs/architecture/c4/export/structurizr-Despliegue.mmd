@@ -1,7 +1,7 @@
 graph LR
   linkStyle default fill:#ffffff
 
-  subgraph diagram ["Deployment View: SismoReporta AQP - Producción"]
+  subgraph diagram ["SismoReporta AQP - Despliegue en Producción (US$ 25,60 al mes)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
     subgraph 52 ["Celular del ciudadano o del brigadista"]
@@ -55,7 +55,7 @@ graph LR
         subgraph 70 ["Volumen de bloques"]
           style 70 fill:#ffffff,stroke:#444444,color:#444444
 
-          71[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF, en un volumen separado<br />[QA-D3]. En modo pico deja de<br />crecer (ADR-006) [QA-D1].</div>")]
+          71[("<div style='font-weight: bold'>Almacenamiento de fotos</div><div style='font-size: 70%; margin-top: 0px'>[Container: Sistema de archivos]</div><div style='font-size: 80%; margin-top:10px'>Fotos de los reportes<br />comprimidas y sin metadatos<br />EXIF (fecha, cámara y<br />coordenadas GPS), en un<br />volumen separado [QA-D3]. En<br />modo pico deja de crecer<br />(ADR-006) [QA-D1].</div>")]
           style 71 fill:#438dd5,stroke:#2e6295,color:#ffffff
         end
 
@@ -64,16 +64,16 @@ graph LR
     end
 
     subgraph 74 ["Proveedor de teselas"]
-      style 74 fill:#ffffff,stroke:#6b6b6b,color:#ffffff
+      style 74 fill:#ffffff,stroke:#6b6b6b,color:#444444
 
       75["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.<br />Externo: queda fuera de la<br />medida de [QA-R2].</div>"]
       style 75 fill:#999999,stroke:#6b6b6b,color:#ffffff
     end
 
     62-. "<div>Lee y escribe datos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->67
-    65-. "<div>Toma trabajos con SKIP LOCKED<br />y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->67
+    65-. "<div>Toma trabajos con SKIP LOCKED<br />(sin que dos procesos tomen<br />el mismo) y guarda las zonas<br />priorizadas</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->67
     62-. "<div>Guarda la foto original</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->71
-    65-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->71
+    65-. "<div>Redimensiona las fotos y<br />elimina los metadatos EXIF<br />(fecha, cámara y GPS)</div><div style='font-size: 70%'>[E/S de archivos]</div>" .->71
     54-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->75
     57-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->75
     54-. "<div>Envía reportes y consultas</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->60

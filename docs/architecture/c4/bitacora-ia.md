@@ -1,4 +1,21 @@
-## E2: workspace.dsl correciones
+# Bitácora de uso de IA - Lab 06 (modelo C4)
+
+Herramienta en todas las interacciones: Claude (Anthropic), en claude.ai. Cada interacción se verificó con
+`structurizr.sh validate` y, desde la corrección del 2026-11-13, con `verificar_c4.py`. El detalle de cada una
+(prompt, propuesta y tablas de verificación) está en las secciones siguientes.
+
+| # | Fecha | Ejercicio | Prompt (resumen) | Propuesta de la IA | Verificación | Decisión |
+|---|---|---|---|---|---|---|
+| 1 | 2026-10-17 | E1 | Prompt IA 1 con `inventario.md` y el ADR-001: borrador de `workspace.dsl` con identificadores jerárquicos, solo tecnologías del ADR-001 y sin confundir contenedor C4 con Docker. | Workspace con personas, sistema externo, 6 contenedores (incluido el proxy inverso) y despliegue con Nginx, Gunicorn, Prometheus y Grafana. | Paso 2 de la guía: contenedores que son infraestructura, externos modelados como internos y tecnologías fuera del ADR; `structurizr.sh validate`. | 4 propuestas corregidas, 1 rechazada y 7 aceptadas (tabla de la interacción 1). |
+| 2 | 2026-10-17 | E2 | Contenedores con descripción, tecnología concreta, protocolo en cada relación y estilos Database, Queue y Web Browser. | Formas `Database` (base de datos y almacenamiento de fotos) y `Web Browser` (PWA); ningún contenedor con forma `Queue`. | ADR-002 (la cola de trabajos es una tabla de PostgreSQL) y ADR-003 (la cola local en IndexedDB vive en la PWA). | Se acepta: no hay contenedor que deba llevar la forma `Queue` (comentario de las líneas 15-16 del workspace). |
+| 3 | 2026-10-17 | E3 | Componentes de la API que coincidan con `paquetes.puml` (Lab 05), con dependencias y sin ciclos. | 5 componentes y 9 dependencias entre ellos, más las relaciones hacia la base de datos y el disco. | Comparación con `paquetes.puml` (líneas 40-54) y recorrido del grafo; desde 2026-11-13, `verificar_c4.py`: mismos 5 nombres, 9 dependencias iguales y sin ciclos. | Se acepta. |
+| 4 | 2026-10-17 | E4 | Vista dinámica del flujo de `secuencia-reporte.puml` con 4 o más pasos sobre relaciones existentes. | 6 pasos (sección "Interacción 4"). | `structurizr.sh validate` rechaza un paso sin relación en el modelo; se contrastó cada paso con un mensaje de la secuencia. | Se acepta; lo que la vista omite se explica en `comparacion.md`. |
+| 5 | 2026-10-17 | E5 | Entorno "Producción" con nodos anidados, una instancia de cada contenedor y coherencia con el presupuesto de `drivers.md`. | Droplet de US$ 12 + respaldos de US$ 3,60 + volumen de US$ 10 = US$ 25,60 (sección "Interacción 5"). | Precios de DigitalOcean (droplet Basic de 1 vCPU y 2 GiB, respaldos diarios al 30 %, volúmenes a US$ 0,10/GiB) frente a R-03 (US$ 20-30); `verificar_c4.py`: cada contenedor tiene instancia. | Se acepta. |
+| 6 | 2026-10-17 | E7 | Prompt IA 2: revisar las vistas exportadas con la lista de c4model.com, sin inventar problemas. | 22 filas de revisión (sección "Interacción 6"). | Cada fila contra el archivo y la línea citados, y contra el PNG. | 3 falsos positivos y 2 exagerados descartados; 2 hallazgos reales aplicados el 2026-11-13 (`c4plantuml.tags` y texto blanco sobre blanco). |
+| 7 | 2026-10-17 | E7 | Prompt IA 3: explicar el contexto al público general en 120 palabras o menos. | Texto de 116 palabras (sección "Interacción 7"). | Cada afirmación contra `workspace.dsl` (tabla de la interacción 7). | 2 frases corregidas el 2026-11-13; la versión final tiene 115 palabras. |
+| 8 | 2026-11-13 | Revisión | Revisar la entrega del Lab 06 contra la guía y la crítica del informe. | README sin la sección C4, sin etiqueta de entrega, corrección de la pregunta 7 sin aplicar, inventario que contradecía al workspace y números de línea erróneos en la revisión. | `git show d8c2792`, `git tag`, exportación y renderizado de las cinco vistas, `verificar_c4.py`. | Rama `lab06-correcciones` y etiqueta `v0.6-c4`. |
+
+## Interacción 1: correcciones al borrador de workspace.dsl (E1)
 | Propuesta de la IA | Decisión | Justificación |
 |---|---|---|
 | "Proxy inverso" como contenedor dentro de SismoReporta AQP | Corregida | Es infraestructura que solo se configura, no se programa: va como nodo de infraestructura en la vista de despliegue, no como contenedor. |
@@ -14,7 +31,25 @@
 | Tecnologías Python, JavaScript, CSS y PostgreSQL en los contenedores | Aceptada | Las cuatro figuran en el ADR-001 y en R-02. |
 | Protocolo en las relaciones | Aceptada | Todas las relaciones tienen protocolo: HTTPS, HTTPS (JSON), HTTP local, SQL, E/S de archivos y llamada en proceso. |
 
-## Workspace Produccion:
+## Interacción 4: vista dinámica SincronizarReporte (E4)
+Prompt: secuencia-reporte.PUML
+Tome el mismo flujo del diagrama de secuencia del Laboratorio 05.
+Escriba una vista dynamic con 4 o más pasos entre contenedores o componentes; cada paso debe corresponder a una relación ya existente en el modelo.
+Resultado:
+        # Mismo flujo que docs/design/secuencia-reporte.puml (Lab 05): HU-01, reporte sin señal y sincronización.
+        # Equivalencias: ServicioIngesta y AlmacenServidorReportes viven en el componente Reportes;
+        # ServicioReportes, AlmacenLocalReportes y PuertoEnvioReportes viven dentro de la PWA.
+        dynamic sismo.api "SincronizarReporte" "HU-01: enviar un reporte sin señal y sincronizarlo." {
+            ciudadano -> sismo.pwa "Registra el reporte con foto y ubicación; sin señal queda en la cola local"
+            sismo.pwa -> sismo.api.reportes "Al recuperar la señal, envía cada reporte pendiente con su UUID"
+            sismo.api.reportes -> sismo.bd "Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)"
+            sismo.api.reportes -> sismo.fotos "Guarda la foto original"
+            sismo.api.reportes -> sismo.api.compartido "Encola el procesamiento de la foto mediante ColaTrabajos"
+            sismo.api.compartido -> sismo.bd "Inserta el trabajo en la misma transacción que el reporte"
+            autolayout lr
+        }
+
+## Interacción 5: entorno Producción (E5)
 Prompt: Defina deploymentEnvironment "Producción" con nodos anidados: dispositivo del usuario, servidor o nube, Docker u otro entorno de ejecución.
 Coloque una instancia (containerInstance) de cada contenedor del nivel 2 en algún nodo.
 Indique sistema operativo, tamaño o servicio de nube de cada nodo, y compruebe que sea coherente con la restricción de presupuesto de su drivers.md.
@@ -65,24 +100,8 @@ Resultado:
             computadora.navegador.pwa -> nube.droplet.proxy "Envía consultas y asignaciones" "HTTPS/JSON"
             nube.droplet.proxy -> nube.droplet.python.api "Reenvía las peticiones" "HTTP/JSON local"
         }
-## Worskpace Secuencia:
-Prompt: secuencia-reporte.PUML
-Tome el mismo flujo del diagrama de secuencia del Laboratorio 05.
-Escriba una vista dynamic con 4 o más pasos entre contenedores o componentes; cada paso debe corresponder a una relación ya existente en el modelo.
-Resultado:
-        # Mismo flujo que docs/design/secuencia-reporte.puml (Lab 05): HU-01, reporte sin señal y sincronización.
-        # Equivalencias: ServicioIngesta y AlmacenServidorReportes viven en el componente Reportes;
-        # ServicioReportes, AlmacenLocalReportes y PuertoEnvioReportes viven dentro de la PWA.
-        dynamic sismo.api "SincronizarReporte" "HU-01: enviar un reporte sin señal y sincronizarlo." {
-            ciudadano -> sismo.pwa "Registra el reporte con foto y ubicación; sin señal queda en la cola local"
-            sismo.pwa -> sismo.api.reportes "Al recuperar la señal, envía cada reporte pendiente con su UUID"
-            sismo.api.reportes -> sismo.bd "Guarda el reporte solo si su UUID no existe (guardarSiNoExiste)"
-            sismo.api.reportes -> sismo.fotos "Guarda la foto original"
-            sismo.api.reportes -> sismo.api.compartido "Encola el procesamiento de la foto mediante ColaTrabajos"
-            sismo.api.compartido -> sismo.bd "Inserta el trabajo en la misma transacción que el reporte"
-            autolayout lr
-        }
-## Prompt IA 2:
+
+## Interacción 6: Prompt IA 2, segundo revisor (E7)
 Prompt: Actúa como revisor de diagramas de arquitectura. Evalúa estas vistas exportadas de un modelo C4
 con la lista de revisión de c4model.com: generales, elementos y relaciones.
 Responde en una tabla (vista, pregunta de la lista, cumple sí/no, evidencia, corrección sugerida).
@@ -122,8 +141,23 @@ Resultado:
 | Acrónimos sin explicar en Contenedores y Dinámica | Exagerado | SKIP LOCKED no es un acrónimo, es una cláusula de SQL. UUID, TLS, SSD, GiB y vCPU son términos estándar para un público técnico. EXIF es dudoso, porque depende del público. | Contenedores y Dinámica pasan a "Sí". Siguen en "No" Componentes (ADR-004) y Despliegue (NYC3, QA-03, R-03 y R-05). |
 | Contexto en Mermaid: "No" en colores porque el gris no tiene leyenda | Exagerado | Es el mismo problema de la fila "¿Tiene leyenda?", así que lo conté dos veces. | Sí en colores; la falta de leyenda queda solo en su propia fila. |
 
-## Prompt IA 3:
+## Interacción 7: Prompt IA 3, explicación para el público general (E7)
 Prompt: Explica el  diagrama de contexto al publico general, que no es
 técnico, en máximo 120 palabras: qué hace el sistema, quién lo usa y de qué servicios externos depende.
 Evita la jerga técnica.
 Resultado:SismoReporta AQP es una aplicación que ayuda a Defensa Civil a organizar la respuesta después de un sismo en Arequipa. La usan tres tipos de personas. Los ciudadanos envían desde su celular una foto y la ubicación de los daños que ven; si no hay señal, el reporte se guarda y se envía solo cuando vuelve la conexión. Los coordinadores ven todos los reportes en un mapa, saben qué zonas necesitan ayuda primero y envían brigadas. Los brigadistas reciben la zona que deben atender y avisan cuando van en camino y cuando terminan. El sistema depende de un único servicio externo: un proveedor de mapas que dibuja las calles sobre las que se muestran los daños.
+
+
+Versión corregida (2026-11-13) en `explicacion.md`.
+
+### Verificación de explicacion.md contra el modelo
+
+| Afirmación de la IA | ¿Está en el modelo? | Decisión |
+|---|---|---|
+| Ayuda a Defensa Civil después de un sismo en Arequipa. | Sí: descripción del workspace (línea 1) y nodo DigitalOcean ("fuera de la zona sísmica de Arequipa"). | Se mantiene. |
+| La usan tres tipos de personas. | Sí: `ciudadano`, `brigadista` y `coordinador`. | Se mantiene. |
+| Los ciudadanos envían foto y ubicación desde su celular; sin señal, el reporte se guarda y se envía solo. | Sí: relación ciudadano → PWA, descripción de la PWA y nodo "Celular del ciudadano o del brigadista". | Se mantiene. |
+| Los coordinadores ven **todos** los reportes en un mapa. | En parte: el modelo dice "Revisa el mapa de daños"; nada dice que muestre todos. | Corregida: "ven los reportes en un mapa". |
+| Saben qué zonas necesitan ayuda primero y envían brigadas. | Sí: "prioriza zonas y asigna brigadas". | Se mantiene. |
+| Los brigadistas avisan cuando **van en camino y cuando terminan**. | No: el modelo dice "Consulta su asignación y marca su estado"; los estados "en camino" y "atendido" vienen de RF-05 (`drivers.md`), no del modelo C4. | Corregida: "consultan la zona que deben atender y marcan en la aplicación cómo va su atención". |
+| Depende de un único servicio externo: un proveedor de mapas. | Sí: `teselas` es el único sistema externo. | Se mantiene. |

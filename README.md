@@ -1,8 +1,9 @@
-# <Nombre del caso> — Laboratorio 04: Fundamentos de arquitectura de software
+# SismoReporta AQP — Laboratorios de Construcción de Software
 Construcción de Software · EPIS-UNSA · 2026-B · Grupo 06
 ## Integrantes
 | Nombre | Rol en el laboratorio (p. ej., redactor de ADR, diagramador, verificador de IA) |
-|Oliva Valdivia David Alexander|Desarrollador,verificador de IA |
+|---|---|
+| Oliva Valdivia David Alexander | Desarrollador, verificador de IA |
 ## Caso
 SismoReporta AQP es una plataforma de reporte ciudadano de daños tras un sismo en Arequipa, pensada para apoyar a Defensa Civil.
 El ciudadano envía reportes con foto y geolocalización desde una PWA que funciona sin señal y los reenvía al recuperarla.
@@ -96,8 +97,9 @@ flowchart TB
 ```
 ## Decisiones arquitectónicas
 - [ADR-001: Estilo arquitectónico](docs/architecture/adr/001-estilo-arquitectonico.md)
-- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-traajos-en-postgresql.md)
-- [ADR-003: ...](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-trabajos-en-postgresql.md)
+- [ADR-003: PWA offline-first](docs/architecture/adr/003-pwa-offline-first.md)
+- [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md)
 ## Diseño UML (Lab 05)
 
 Diseño detallado de la historia [HU-01: Enviar un reporte sin señal y sincronizarlo](docs/design/historia.md).
@@ -125,28 +127,29 @@ stateDiagram-v2
     Rechazado --> [*]
 ```
 
-Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd)
+Fuente: [estado-estadoReporte.mmd](docs/design/estado-estadoReporte.mmd) · Imagen: [Estados-EstadoReporte.png](docs/design/img/Estados-EstadoReporte.png)
 
 ### Demás diagramas
 
 | Diagrama | Fuente | Imagen |
 |---|---|---|
-| Clases | [clases.puml](docs/design/clases.puml) | [clases.png](docs/design/img/clases.png) |
-| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [secuencia-reporte.png](docs/design/img/secuencia-reporte.png) |
+| Clases | [clases.puml](docs/design/clases.puml) | [DiagramadeClases.png](docs/design/img/DiagramadeClases.png) |
+| Secuencia | [secuencia-reporte.puml](docs/design/secuencia-reporte.puml) | [Secuencia-Reporte.png](docs/design/img/Secuencia-Reporte.png) |
 | Actividades | [actividades-brigada.puml](docs/design/actividades-brigada.puml) | [actividades-brigada.png](docs/design/img/actividades-brigada.png) |
 | Paquetes | [paquetes.puml](docs/design/paquetes.puml) | [paquetes.png](docs/design/img/paquetes.png) |
-| Clases generadas desde el código | [classes_en.puml](docs/design/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
+| Clases generadas desde el código | [classes_en.puml](src/modulo/classes_en.puml) | [classes_en.png](docs/design/img/classes_en.png) |
 
 ### Código y verificación
 
-- [reportes.py](src/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
+- [reportes.py](src/modulo/reportes.py): esqueleto en Python generado a partir del diagrama de clases.
 - [round-trip.md](docs/design/round-trip.md): diferencias entre el diagrama de diseño y el generado desde el código.
-- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas.
+- [consistencia.md](docs/design/consistencia.md): revisión de las reglas C1 a C5 entre los cinco diagramas, con los falsos positivos y el estado de las correcciones.
+- [verificar_c1.py](docs/design/verificar_c1.py): comprueba que cada mensaje de la secuencia sea una operación de su clase receptora (regla C1).
 - [bitacora-ia.md](docs/design/bitacora-ia.md): registro de las interacciones con la IA.
 - [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md): resolución del ciclo entre priorización y brigadas.
 ## Arquitectura C4 (Lab 06)
 
-Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.dsl), validado y exportado con Structurizr CLI.
+Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.dsl), validado y exportado con Structurizr CLI. Los elementos salen de [inventario.md](docs/architecture/c4/inventario.md).
 
 ### Diagrama de contexto
 
@@ -154,39 +157,47 @@ Modelo C4 de SismoReporta AQP en [workspace.dsl](docs/architecture/c4/workspace.
 graph LR
   linkStyle default fill:#ffffff
 
-  subgraph diagram ["System Context View: SismoReporta AQP"]
+  subgraph diagram ["SismoReporta AQP - Diagrama de contexto (nivel 1)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.</div>"]
+    1["<div style='font-weight: bold'>Ciudadano</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Reporta daños con foto y<br />ubicación tras un sismo.<br />Fuente de [QA-D1] y [QA-S1].</div>"]
     style 1 fill:#08427b,stroke:#052e56,color:#ffffff
-    15["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.</div>"]
-    style 15 fill:#999999,stroke:#6b6b6b,color:#ffffff
-    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado.</div>"]
+    16["<div style='font-weight: bold'>Servicio de teselas de mapa</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Mapa base: OpenStreetMap o un<br />proveedor de teselas.<br />Externo: queda fuera de la<br />medida de [QA-R2].</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    2["<div style='font-weight: bold'>Brigadista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Atiende las zonas asignadas y<br />actualiza su estado. No es<br />fuente de ningún escenario<br />del árbol de utilidad.</div>"]
     style 2 fill:#08427b,stroke:#052e56,color:#ffffff
-    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    3["<div style='font-weight: bold'>Coordinador</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Revisa el mapa de daños,<br />prioriza zonas y asigna<br />brigadas. Fuente de [QA-R2];<br />revisa los dispositivos<br />sospechosos [QA-S2].</div>"]
     style 3 fill:#08427b,stroke:#052e56,color:#ffffff
-    4["<div style='font-weight: bold'>SismoReporta AQP</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Recibe reportes de daños,<br />prioriza zonas y asigna<br />brigadas.</div>"]
+    4["<div style='font-weight: bold'>SismoReporta AQP</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Recibe reportes de daños,<br />prioriza zonas y asigna<br />brigadas. [QA-D1] [QA-R2]<br />[QA-S1] [QA-S2]</div>"]
     style 4 fill:#1168bd,stroke:#0b4884,color:#ffffff
 
     1-. "<div>Envía reportes de daños con<br />foto y ubicación</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
     2-. "<div>Consulta su asignación y<br />marca su estado</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
     3-. "<div>Revisa el mapa y asigna<br />brigadas</div><div style='font-size: 70%'>[HTTPS]</div>" .->4
-    4-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->15
+    4-. "<div>Obtiene el mapa base</div><div style='font-size: 70%'>[HTTPS/PNG]</div>" .->16
 
   end
 ```
 
-Fuente: [structurizr-Contexto.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd)
+Fuente: [structurizr-Contexto.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) (copiado sin cambios de `export/`).
 
 ### Vistas
 
-| Vista | Imagen |
-|---|---|
-| Contexto | [structurizr-Contexto.png](docs/architecture/c4/img/structurizr-Contexto.png) |
-| Contenedores | [structurizr-Contenedores.png](docs/architecture/c4/img/structurizr-Contenedores.png) |
-| Componentes de la API | [structurizr-Componentes.png](docs/architecture/c4/img/structurizr-Componentes.png) |
-| Dinámica: SincronizarReporte (HU-01) | [structurizr-SincronizarReporte.png](docs/architecture/c4/img/structurizr-SincronizarReporte.png) |
-| Despliegue en Producción | [structurizr-Despliegue.png](docs/architecture/c4/img/structurizr-Despliegue.png) |
+| Vista | Imagen | C4-PlantUML | Mermaid |
+|---|---|---|---|
+| Contexto | [structurizr-Contexto.png](docs/architecture/c4/img/structurizr-Contexto.png) | [.puml](docs/architecture/c4/export/structurizr-Contexto.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contexto.mmd) |
+| Contenedores | [structurizr-Contenedores.png](docs/architecture/c4/img/structurizr-Contenedores.png) | [.puml](docs/architecture/c4/export/structurizr-Contenedores.puml) | [.mmd](docs/architecture/c4/export/structurizr-Contenedores.mmd) |
+| Componentes de la API | [structurizr-Componentes.png](docs/architecture/c4/img/structurizr-Componentes.png) | [.puml](docs/architecture/c4/export/structurizr-Componentes.puml) | [.mmd](docs/architecture/c4/export/structurizr-Componentes.mmd) |
+| Dinámica: SincronizarReporte (HU-01) | [structurizr-SincronizarReporte.png](docs/architecture/c4/img/structurizr-SincronizarReporte.png) | [.puml](docs/architecture/c4/export/structurizr-SincronizarReporte.puml) | [.mmd](docs/architecture/c4/export/structurizr-SincronizarReporte.mmd) |
+| Despliegue en Producción | [structurizr-Despliegue.png](docs/architecture/c4/img/structurizr-Despliegue.png) | [.puml](docs/architecture/c4/export/structurizr-Despliegue.puml) | [.mmd](docs/architecture/c4/export/structurizr-Despliegue.mmd) |
+
+### Revisión y comunicación
+
+- [revision-c4.md](docs/architecture/c4/revision-c4.md): lista de revisión oficial aplicada a las cinco vistas.
+- [verificar_c4.py](docs/architecture/c4/verificar_c4.py): comprueba descripciones, tecnologías, componentes frente a `paquetes.puml`, ciclos e instancias de despliegue.
+- [comparacion.md](docs/architecture/c4/comparacion.md): secuencia UML frente a vista dinámica, y escritura a mano ([contexto-manual.puml](docs/architecture/c4/contexto-manual.puml)) frente a modelo exportado.
+- [explicacion.md](docs/architecture/c4/explicacion.md): explicación para el público general (115 palabras).
+- [bitacora-ia.md](docs/architecture/c4/bitacora-ia.md): 8 interacciones con la IA.
 
 ## Patrones de diseño (Lab 07)
 
@@ -196,30 +207,34 @@ Refactor del flujo HU-01, de [antes/servicio.py](src/modulo/antes/servicio.py) a
 
 | Olor o necesidad | Patrón | Prueba |
 |---|---|---|
-| El servicio conoce los formatos de IndexedDB, HTTP y PostgreSQL | Adapter ([adaptadores.py](src/modulo/adaptadores.py)) | [test_comportamiento.py](tests/test_comportamiento.py): 12 pruebas de caracterización que pasan en las dos versiones |
+| El servicio conoce los formatos de IndexedDB, HTTP y PostgreSQL | Adapter ([adaptadores.py](src/modulo/adaptadores.py)) | [test_comportamiento.py](tests/test_comportamiento.py): 12 pruebas de caracterización que pasan en las dos versiones (24 ejecuciones) |
 | Cada servicio crea sus dependencias concretas, y cambiar un servicio externo obliga a modificarlo | Strategy ([puertos.py](src/modulo/puertos.py)) y Factory ([fabrica.py](src/modulo/fabrica.py)) | [test_patrones.py](tests/test_patrones.py): `test_open_closed_nuevo_almacen_del_servidor_sin_modificar_el_servicio` |
-| El estado es un texto y nada impide transiciones inválidas en el ciclo de seis estados del Lab 05 | State ([estados.py](src/modulo/estados.py)) | Sin prueba |
-| El controlador imprime los mensajes con `print` | Observer ([eventos.py](src/modulo/eventos.py)) | Sin prueba; aún no está conectado al flujo |
-| No queda registro de cada intento de envío para medir QA-01 | Decorator `EnvioConRegistro` ([decoradores.py](src/modulo/decoradores.py)) | Sin prueba; aún no está conectado al flujo |
-| El sistema dependería de un proveedor de LLM concreto | Strategy y Adapter ([ia/puerto.py](src/modulo/ia/puerto.py), [ia/adaptador_llm.py](src/modulo/ia/adaptador_llm.py)) | Sin prueba |
-| El LLM se consultaría de nuevo por cada descripción repetida | Decorator `ClasificadorConCache` ([ia/cache.py](src/modulo/ia/cache.py)) | Sin prueba |
-| La respuesta del LLM se usaría sin revisar: categorías inventadas, estructuras declaradas seguras o datos personales | Chain of Responsibility ([ia/guardrails.py](src/modulo/ia/guardrails.py)) | Sin prueba |
+| El estado es un texto y nada impide transiciones inválidas en el ciclo de seis estados del Lab 05 | State ([estados.py](src/modulo/estados.py)) | [test_estados.py](tests/test_estados.py): `test_transicion_permitida_lleva_al_estado_del_diagrama` (6) y `test_transicion_no_dibujada_esta_prohibida` (30), entre otras; 41 ejecuciones |
+| El controlador imprime los mensajes con `print` | Observer ([eventos.py](src/modulo/eventos.py) y [observadores.py](src/modulo/observadores.py)) | [test_patrones.py](tests/test_patrones.py): `test_dos_suscriptores_reciben_los_mismos_eventos` y 3 más |
+| No queda registro de cada intento de envío para medir QA-01 | Decorator `EnvioConRegistro` ([decoradores.py](src/modulo/decoradores.py)) | [test_patrones.py](tests/test_patrones.py): `test_el_decorador_registra_cada_intento_sin_cambiar_el_resultado` y 2 más |
+| El sistema dependería de un proveedor de LLM concreto | Strategy y Adapter ([ia/puerto.py](src/modulo/ia/puerto.py), [ia/adaptador_llm.py](src/modulo/ia/adaptador_llm.py)) | [test_ia.py](tests/test_ia.py): `test_el_llm_recibe_las_instrucciones_y_la_descripcion`, `test_si_el_llm_falla_el_reporte_pasa_a_revision_humana` |
+| El LLM se consultaría de nuevo por cada descripción repetida | Decorator `ClasificadorConCache` ([ia/cache.py](src/modulo/ia/cache.py)) | [test_ia.py](tests/test_ia.py): `test_la_cache_evita_consultar_dos_veces_la_misma_descripcion` y 4 más |
+| La respuesta del LLM se usaría sin revisar: categorías inventadas, estructuras declaradas seguras o datos personales | Chain of Responsibility ([ia/guardrails.py](src/modulo/ia/guardrails.py)) | [test_ia.py](tests/test_ia.py): `test_respuesta_invalida_se_bloquea_y_pasa_a_revision_humana` (respuestas inválidas de un LLM simulado) y 2 más |
+
+Cada patrón tiene al menos una prueba que falla si se rompe (comprobado con mutaciones). Los diagramas de cada patrón están en [docs/design/patrones/](docs/design/patrones/) y [verificar_clases.py](docs/design/verificar_clases.py) confirma que [clases.puml](docs/design/clases.puml) coincide con el código (40 clases, 0 diferencias con pyreverse).
 
 ### Métricas
 
-Medidas con radon (`radon cc -s -a` y `radon raw -s`) sobre el código actual, sin contar las pruebas. El flujo equivalente reúne los archivos que reemplazan a `antes/servicio.py`: `servicio`, `modelo`, `puertos`, `adaptadores`, `fabrica`, `eventos` y `decoradores`.
+Medidas con radon (`radon cc -s -a` y `radon raw -s`) sobre el código actual, sin contar las pruebas. Detalle por método en [metricas.md](docs/design/patrones/metricas.md).
 
 | Versión | Archivos | Bloques analizados | Complejidad promedio | Complejidad máxima | SLOC |
 |---|---|---|---|---|---|
 | Antes | 1 | 27 | A (1,67) | A (5): `ServicioReportes.sincronizar_pendientes` | 189 |
-| Después: flujo equivalente | 7 | 61 | A (1,77) | A (4): `ServicioReportes.__init__` | 331 |
+| Después: flujo equivalente | 8 | 67 | A (1,88) | A (5): `VistaConsola.notificar` | 381 |
 | Después: máquina de estados (State) | 1 | 33 | A (1,33) | A (3): `Borrador.encolar` | 74 |
 | Después: componente de IA | 4 | 25 | A (2,56) | B (6): `FormatoValido._verificar` | 139 |
-| **Después: total** | **12** | **119** | **A (1,82)** | **B (6): `FormatoValido._verificar`** | **544** |
+| **Después: total** | **13** | **125** | **A (1,87)** | **B (6): `FormatoValido._verificar`** | **594** |
 
-`sincronizar_pendientes` bajó de 5 a 3. Pruebas: 12 de caracterización antes del refactor; después, 13 funciones de prueba con 25 ejecuciones, todas pasan.
+`sincronizar_pendientes` bajó de 5 a 3. Pruebas: 12 de caracterización antes del refactor; después, 38 funciones de prueba con 91 ejecuciones, todas pasan (`python -m pytest`).
 
 ## Diseño de la arquitectura (Lab 08)
+
+[![fitness](https://github.com/DavidOliva06/cs-2026b-lab04-grupo06/actions/workflows/fitness.yml/badge.svg)](https://github.com/DavidOliva06/cs-2026b-lab04-grupo06/actions/workflows/fitness.yml)
 
 Escenario de crecimiento: simulacro nacional, con 20 000 reportes en 1 hora y la red móvil congestionada. El atributo crítico es la disponibilidad.
 
@@ -237,7 +252,26 @@ Fuente: [arbol.dot](docs/architecture/utilidad/arbol.dot). Los 13 escenarios can
 | [2](docs/architecture/add/iteracion-2.md) | **R2** (H,H), rendimiento: carga del mapa p95 ≤ 3 s, filtro p95 ≤ 1 s y retraso ≤ 60 s, con 30 coordinadores | Aumentar la eficiencia: API del mapa agregada por zona y comprimida con gzip ([ADR-007](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)) | Prototipo de medición [prototipo_r2.py](fitness/prototipo_r2.py): carga del mapa p95 de 13,46 s a 1,00 s; respuesta de 826 KB a 28 KB | **Sí** |
 | [3](docs/architecture/add/iteracion-3.md) | **S2** (H,M), seguridad: 1 000 reportes falsos en 5 min desde un dispositivo | Identificar actores, y detectar y reaccionar: límite y un voto por dispositivo ([ADR-008](docs/architecture/adr/008-identificador-de-dispositivo.md)) | Simulación por conteo [simulacion_s2.py](fitness/simulacion_s2.py), más una comparación de alternativas para el código por SMS: reportes falsos aceptados de 1 000 a 10, zonas alteradas de 5 a 0 y 100 % de legítimos aceptados | **Sí**, salvo un ataque Sybil, aceptado como riesgo residual |
 
-Los riesgos, puntos de sensibilidad y puntos de trade-off están en [atam-lite.md](docs/architecture/atam-lite.md). Las reglas estructurales de ADR-001 y ADR-005 se verifican con import-linter ([.importlinter](.importlinter)).
+Los riesgos, puntos de sensibilidad y puntos de trade-off están en [atam-lite.md](docs/architecture/atam-lite.md), con la [matriz de probabilidad e impacto](docs/architecture/riesgos/matriz-riesgos.svg).
+
+### Fitness functions
+
+El workflow [fitness.yml](.github/workflows/fitness.yml) las ejecuta en cada Pull Request. Detalle, salida de la violación de prueba y mutaciones en [fitness.md](docs/architecture/fitness.md).
+
+| Tipo | Fitness function | Escenario o regla |
+|---|---|---|
+| Estructural | 4 contratos de import-linter en [.importlinter](.importlinter) | ADR-001 (ingesta sin IA, IA aislada) y ADR-005 (capas, servicio sin infraestructura) |
+| De calidad | `test_d1_modo_pico_...` en [test_fitness.py](tests/test_fitness.py) | D1: ≥ 99,5 % guardados ≤ 15 min, con 1 núcleo y una caída de 10 min |
+| De calidad | `test_r2_mapa_agrupado_...` | R2: carga del mapa p95 ≤ 3 s, filtro p95 ≤ 1 s, retraso ≤ 60 s |
+| De calidad | `test_s2_limite_y_voto_...` | S2: ≤ 10 reportes aceptados por dispositivo y 0 zonas alteradas |
+| De calidad | `test_ingesta_no_pierde_ni_duplica_...` | 0 reportes perdidos o duplicados con respuestas perdidas |
+
+La violación de prueba está en la rama `prueba-violacion-fitness` (commits `3fd719e` y `117b86b`): rompe 2 de los 4 contratos y se revirtió.
+
+### Evaluación cruzada y entrega
+
+- **ATAM-lite cruzado (E3):** no se realizó; el laboratorio se desarrolló de forma individual y no hay issue enviado ni recibido. [atam-lite.md](docs/architecture/atam-lite.md) registra solo hallazgos propios.
+- **Etiqueta:** `v0.8-arquitectura`.
 
 ### ADR del Lab 08
 

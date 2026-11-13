@@ -1,0 +1,33 @@
+# Fitness functions del Lab 08 (E5): se ejecutan en cada Pull Request y en cada push a main.
+# - Estructurales: contratos de import-linter (.importlinter) para ADR-001 y ADR-005.
+# - De calidad: tests/test_fitness.py convierte los escenarios D1, R2 y S2 en pruebas.
+# - Además corre toda la suite (caracterización y patrones del Lab 07).
+name: fitness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  fitness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: python -m pip install pytest==8.3.3 import-linter==2.1
+
+      - name: Fitness functions estructurales (import-linter)
+        env:
+          PYTHONPATH: src:src/modulo
+        run: lint-imports
+
+      - name: Fitness functions de calidad y pruebas
+        run: python -m pytest -v

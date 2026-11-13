@@ -1,20 +1,34 @@
+"""Observer: eventos del flujo HU-01 y el publicador que los reparte.
 
+El servicio publica qué pasó; cada suscriptor decide qué hacer con eso.
+Cada servicio tiene su propio Publicador, así que no hay estado global.
+"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Union
+
+
 @dataclass(frozen=True)
 class ConsentimientoRechazado:
     ciudadano_id: str
+
+
 @dataclass(frozen=True)
 class ReporteGuardado:
     reporte_id: str
+
+
 @dataclass(frozen=True)
 class SincronizacionTerminada:
     enviados: int
     pendientes: int
+
+
 Evento = Union[ConsentimientoRechazado, ReporteGuardado, SincronizacionTerminada]
+
+
 class Observador(ABC):
     @abstractmethod
     def notificar(self, evento: Evento) -> None: ...
