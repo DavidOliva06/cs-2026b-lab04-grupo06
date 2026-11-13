@@ -1,8 +1,8 @@
-# Bitácora de uso de IA - SismoReporta AQP (Laboratorio 06: refactorización y patrones)
+# Bitácora de uso de IA - SismoReporta AQP (Laboratorio 07: refactorización y patrones)
 
 - Herramienta: Claude (asistente de IA de Anthropic)
 - Autor: Oliva Valdivia David Alexander
-- Periodo: 2026-10-25
+- Periodo: 2026-10-25 (interacciones 1 a 9) y 2026-11-13 (interacción 10, revisión del informe)
 
 ## Interacciones
 
@@ -18,6 +18,8 @@
 | 8 | Métricas y trade-off | "Complete metricas.md con una tabla de radon antes y después... y al menos un patrón que decidieron NO aplicar." | `metricas.md` con complejidad, SLOC, comparación por método, trade-off y cuatro patrones no aplicados. | **Corrección:** la IA escribió 36 bloques para la máquina de estados; al sumar 67 + 25 + 36 no daba el total de 125 que informa radon, y se corrigió a 33. La complejidad promedio subió de 1,67 a 1,88, y se documentó como costo, no como mejora. |
 | 9 | Diagramas de patrones y verificación con pyreverse | "Elabore un diagrama de clases PlantUML por cada patrón aplicado... actualice clases.puml y verifique con pyreverse." | Cinco diagramas con estereotipos de rol, `clases.puml` actualizado y `verificar_clases.py`, que compara clases, métodos y atributos con la salida de pyreverse. | El verificador dio 0 diferencias en 40 clases. Para comprobar que detecta errores, se modificó una copia del diagrama y reportó las 5 diferencias. **Corrección:** el PNG de `clases.puml` salía cortado en el límite de 4096 px de PlantUML; se cambió la orientación a `left to right direction`. |
 
+| 10 | Revisión de la entrega (2026-11-13) | "Revisa la entrega del Lab 07 contra la guía y la crítica del informe." | Al ejecutar `verificar_clases.py` sobre el commit entregado (`e3e2282`) aparecieron 6 diferencias: faltaban `VistaConsola` y `ContadorPendientes`, `suscribir`/`desuscribir` y los atributos `vista` y `contador`. Es decir, el commit no tenía `observadores.py`, el servicio sin Observer ni Decorator conectados y las pruebas de State, Observer, Decorator e IA, aunque el README, el ADR-005 y estas filas 5 a 7 los describían. | **Corrección detectada por las herramientas:** se agregaron los archivos faltantes y el verificador volvió a 0 diferencias en 40 clases; las pruebas pasan (91). Se confirmó con mutaciones que cada patrón tiene una prueba que falla si se rompe (tabla de mutaciones en el informe). |
+
 ## Lecciones aprendidas
 
 - **Que las pruebas pasen no basta:** en la interacción 4 las pruebas pasaron sobre un archivo que no había cambiado. Después de cada refactor hay que confirmar que se probó el código nuevo, por ejemplo con una mutación deliberada.
@@ -25,6 +27,8 @@
 - **Un patrón necesita un olor concreto:** la IA rechazó State, Observer y Decorator cuando no había motivo, y los aplicó solo cuando apareció una necesidad real (seis estados, un segundo suscriptor, el registro de envíos).
 - **Hay que revisar las cifras de la IA:** el conteo de bloques en las métricas tenía un error que solo se vio al comprobar la suma.
 - **Verificar los diagramas con herramientas:** pyreverse y el verificador permiten comprobar que el diagrama coincide con el código en lugar de confiar en la revisión visual.
+
+- **Comprobar lo que se sube:** la entrega tenía diagramas y métricas de un código que no estaba en el commit. Ejecutar las pruebas y el verificador sobre un clon limpio antes de etiquetar lo habría detectado.
 
 ## Pendientes
 

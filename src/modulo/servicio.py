@@ -1,3 +1,17 @@
+"""Flujo crítico HU-01 refactorizado con Strategy + Adapter + Factory.
+
+Variación principal: el servicio externo que atiende cada paso del flujo
+(almacenamiento en el celular, envío por la red y almacenamiento en el servidor).
+Cada paso es un puerto (Strategy, en puertos.py); cada servicio externo simulado
+tiene su Adapter (adaptadores.py), y la Factory (fabrica.py) crea el adecuado.
+
+Además, el servicio publica eventos (Observer, en eventos.py) a los que se
+suscriben la vista y el contador de pendientes (observadores.py), y cada envío
+queda registrado mediante un Decorator (decoradores.py).
+
+El comportamiento observable es el mismo que en antes/servicio.py.
+Requiere Python 3.10 o superior. Demostración: python -m modulo.servicio (con PYTHONPATH=src/modulo:src)
+"""
 from __future__ import annotations
 
 import base64
@@ -8,8 +22,16 @@ from datetime import datetime, timezone
 from externos import RespuestaHttp, red_movil
 
 from .adaptadores import DSN_SERVIDOR, URL_INGESTA
+from .eventos import (
+    ConsentimientoRechazado,
+    Observador,
+    Publicador,
+    ReporteGuardado,
+    SincronizacionTerminada,
+)
 from .fabrica import FabricaEstrategias, fabrica_por_defecto
 from .modelo import ENVIADO, PENDIENTE_DE_ENVIO, Ciudadano, Reporte
+from .observadores import ContadorPendientes, VistaConsola
 from .puertos import AlmacenLocalReportes, AlmacenServidorReportes, PuertoEnvioReportes
 
 __all__ = [
@@ -26,7 +48,7 @@ __all__ = [
 ]
 
 ALMACEN_LOCAL_POR_DEFECTO = "indexeddb"
-ENVIO_POR_DEFECTO = "http"
+ENVIO_POR_DEFECTO = "http_con_registro"
 ALMACEN_SERVIDOR_POR_DEFECTO = "postgres"
 
 
@@ -51,24 +73,35 @@ class ServicioReportes:
             AlmacenLocalReportes, ALMACEN_LOCAL_POR_DEFECTO
         )
         self.envio = envio or fabrica.crear(PuertoEnvioReportes, ENVIO_POR_DEFECTO)
+        self._eventos = Publicador()
+
+    def suscribir(self, observador: Observador) -> None:
+        self._eventos.suscribir(observador)
+
+    def desuscribir(self, observador: Observador) -> None:
+        self._eventos.desuscribir(observador)
 
     def crear_reporte(
         self, ciudadano: Ciudadano, foto: bytes, ubicacion: tuple[float, float]
     ) -> Reporte:
         if not ciudadano.puede_reportar():
+            self._eventos.publicar(ConsentimientoRechazado(ciudadano.id))
             raise ConsentimientoNoAceptado("El ciudadano no aceptó el uso de ubicación y fotos")
         reporte = Reporte(str(uuid.uuid4()), ciudadano.id, foto, ubicacion)
         self.almacen_local.guardar(reporte)
+        self._eventos.publicar(ReporteGuardado(reporte.id))
         return reporte
 
     def sincronizar_pendientes(self) -> int:
         """Envía los reportes pendientes y devuelve cuántos quedaron enviados."""
+        pendientes = self.almacen_local.buscar_por_estado(PENDIENTE_DE_ENVIO)
         enviados = 0
-        for reporte in self.almacen_local.buscar_por_estado(PENDIENTE_DE_ENVIO):
+        for reporte in pendientes:
             if self.envio.enviar(reporte):
                 reporte.marcar_enviado(datetime.now(timezone.utc))
                 self.almacen_local.guardar(reporte)
                 enviados += 1
+        self._eventos.publicar(SincronizacionTerminada(enviados, len(pendientes) - enviados))
         return enviados
 
 
@@ -116,33 +149,30 @@ class ServicioIngesta:
 
 
 class ControladorReportes:
-    def __init__(self, servicio: ServicioReportes) -> None:
+    """Conecta la PWA con el servicio. Ya no arma mensajes: los suscriptores reaccionan a los eventos."""
+
+    def __init__(
+        self,
+        servicio: ServicioReportes,
+        vista: Observador | None = None,
+        contador: ContadorPendientes | None = None,
+    ) -> None:
         self.servicio = servicio
+        self.vista = vista or VistaConsola()
+        self.contador = contador or ContadorPendientes()
+        servicio.suscribir(self.vista)
+        servicio.suscribir(self.contador)
 
     def enviar_reporte(
         self, ciudadano: Ciudadano, foto: bytes, ubicacion: tuple[float, float]
     ) -> Reporte | None:
         try:
-            reporte = self.servicio.crear_reporte(ciudadano, foto, ubicacion)
+            return self.servicio.crear_reporte(ciudadano, foto, ubicacion)
         except ConsentimientoNoAceptado:
-            self._mostrar_consentimiento()
             return None
-        self._mostrar_estado("Pendiente de envío")
-        return reporte
 
     def al_recuperar_conexion(self) -> None:
-        enviados = self.servicio.sincronizar_pendientes()
-        if enviados:
-            self._mostrar_estado(f"Enviado ({enviados} reporte(s))")
-        else:
-            self._mostrar_estado("Sigue pendiente de envío")
-
-    # INGENUO: la "pantalla" es un print dentro del controlador.
-    def _mostrar_estado(self, texto: str) -> None:
-        print(f"  [PWA] {texto}")
-
-    def _mostrar_consentimiento(self) -> None:
-        print("  [PWA] Debe aceptar el uso de su ubicación y sus fotos")
+        self.servicio.sincronizar_pendientes()
 
 
 # --- Demostración de los criterios de aceptación ----------------------------

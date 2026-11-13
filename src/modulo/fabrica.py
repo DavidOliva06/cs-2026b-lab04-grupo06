@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Callable, TypeVar
 
 from .adaptadores import AdaptadorEnvioHttp, AdaptadorIndexedDB, AdaptadorPostgres
+from .decoradores import EnvioConRegistro
 from .puertos import AlmacenLocalReportes, AlmacenServidorReportes, PuertoEnvioReportes
 
 P = TypeVar("P")
@@ -35,5 +36,10 @@ def fabrica_por_defecto() -> FabricaEstrategias:
     fabrica = FabricaEstrategias()
     fabrica.registrar(AlmacenLocalReportes, "indexeddb", AdaptadorIndexedDB)
     fabrica.registrar(PuertoEnvioReportes, "http", AdaptadorEnvioHttp)
+    fabrica.registrar(
+        PuertoEnvioReportes,
+        "http_con_registro",
+        lambda **opciones: EnvioConRegistro(AdaptadorEnvioHttp(**opciones)),
+    )
     fabrica.registrar(AlmacenServidorReportes, "postgres", AdaptadorPostgres)
     return fabrica

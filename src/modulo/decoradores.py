@@ -12,6 +12,7 @@ import time
 from .modelo import Reporte
 from .puertos import PuertoEnvioReportes
 
+
 class EnvioConRegistro(PuertoEnvioReportes):
     def __init__(self, envio: PuertoEnvioReportes, registro: logging.Logger | None = None) -> None:
         self._envio = envio
