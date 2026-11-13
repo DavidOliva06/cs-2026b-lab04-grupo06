@@ -12,6 +12,7 @@ from externos import RespuestaHttp, red_movil
 
 from .adaptadores import DSN_SERVIDOR, URL_INGESTA
 from .fabrica import FabricaEstrategias, fabrica_por_defecto
+from .ia.puerto import ClasificadorDanos  # VIOLACIÓN DE PRUEBA: la ingesta llama a la IA (ADR-001)
 from .eventos import Observador
 from .modelo import ENVIADO, PENDIENTE_DE_ENVIO, Ciudadano, Reporte
 from .observadores import ContadorPendientes, VistaConsola
