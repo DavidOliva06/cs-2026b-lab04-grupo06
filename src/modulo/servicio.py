@@ -18,7 +18,6 @@ from .eventos import (
     SincronizacionTerminada,
 )
 from .fabrica import FabricaEstrategias, fabrica_por_defecto
-from .adaptadores import AdaptadorIndexedDB  # VIOLACIÓN DE PRUEBA: el servicio conoce un adaptador (ADR-005)
 from .modelo import ENVIADO, PENDIENTE_DE_ENVIO, Ciudadano, Reporte
 from .puertos import AlmacenLocalReportes, PuertoEnvioReportes
 
