@@ -1,0 +1,1 @@
+{"reporte_id": "R6", "gravedad": null, "prioridad": null, "personas_en_riesgo": false, "requiere_revision": true, "motivo": "Comentario sobre la intensidad del sismo y pedido de aviso cuando pase el peligro; no describe ningún daño ni personas en riesgo."}

@@ -1,0 +1,1 @@
+{"reporte_id": "R3", "gravedad": "grave", "prioridad": "alta", "personas_en_riesgo": false, "requiere_revision": false, "motivo": "Vivienda de adobe con segundo piso inclinado y escalera separada de la pared, sin colapso reportado. Los ocupantes ya evacuaron y no se reportan heridos ni atrapados."}

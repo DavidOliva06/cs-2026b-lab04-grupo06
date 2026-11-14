@@ -1,0 +1,1 @@
+{"reporte_id": "R7", "gravedad": null, "prioridad": null, "personas_en_riesgo": false, "requiere_revision": true, "motivo": "Pregunta sobre el horario de un simulacro y la asistencia al colegio; no describe ningún daño causado por el sismo ni personas en riesgo."}

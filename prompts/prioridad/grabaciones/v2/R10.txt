@@ -1,0 +1,1 @@
+{"reporte_id": "R10", "gravedad": "leve", "prioridad": "baja", "personas_en_riesgo": false, "requiere_revision": false, "motivo": "Grietas finas en dos paredes del dormitorio, sin daño estructural ni personas en riesgo reportados. El ciudadano pregunta si puede dormir adentro: la habitabilidad solo la determina un evaluador en sitio."}

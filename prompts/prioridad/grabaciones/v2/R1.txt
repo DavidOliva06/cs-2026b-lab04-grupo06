@@ -1,0 +1,1 @@
+{"reporte_id": "R1", "gravedad": "leve", "prioridad": "baja", "personas_en_riesgo": false, "requiere_revision": false, "motivo": "Caída de objetos (cuadros, florero) y fisura fina en el tarrajeo de la sala, sin daño reportado en muros ni estructura principal y sin personas en riesgo."}
