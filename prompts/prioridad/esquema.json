@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Prioridad de un reporte ciudadano (Tarea B, SismoReporta AQP)",
+  "description": "Contrato de salida del prompt de priorización. Toda respuesta que no lo cumpla se rechaza y el reporte va a revisión humana.",
+  "type": "object",
+  "required": ["reporte_id", "gravedad", "prioridad", "personas_en_riesgo", "requiere_revision", "motivo"],
+  "additionalProperties": false,
+  "properties": {
+    "reporte_id": {
+      "type": "string",
+      "pattern": "^(R[0-9]+|EJ)$",
+      "description": "El id del reporte recibido (R1, R2, ...)."
+    },
+    "gravedad": {
+      "type": ["string", "null"],
+      "enum": ["leve", "moderado", "grave", "colapso", null],
+      "description": "Los mismos niveles que GRAVEDADES en src/modulo/ia/puerto.py (Lab 07). null si el texto no describe un daño."
+    },
+    "prioridad": {
+      "type": ["string", "null"],
+      "enum": ["baja", "media", "alta", "critica", null],
+      "description": "Prioridad sugerida para el coordinador. null si el texto no describe un daño."
+    },
+    "personas_en_riesgo": {
+      "type": "boolean",
+      "description": "true si el reporte menciona personas atrapadas, heridas o expuestas a un peligro inmediato."
+    },
+    "requiere_revision": {
+      "type": "boolean",
+      "description": "true si un coordinador debe revisar el reporte antes de usar la clasificación."
+    },
+    "motivo": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 280,
+      "description": "Justificación breve, sin datos personales (el mismo límite que el resumen del Lab 07)."
+    }
+  },
+  "if": {"properties": {"requiere_revision": {"const": false}}, "required": ["requiere_revision"]},
+  "then": {
+    "properties": {
+      "gravedad": {"type": "string"},
+      "prioridad": {"type": "string"}
+    }
+  }
+}
