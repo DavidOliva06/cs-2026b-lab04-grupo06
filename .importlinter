@@ -73,6 +73,7 @@ source_modules =
     modulo.ia.puerto
     modulo.ia.cache
     modulo.ia.guardrails
+    modulo.ia.generador_prioridad
 forbidden_modules =
     externos
     modulo.adaptadores
