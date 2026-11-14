@@ -19,4 +19,8 @@ La columna "Commit" enlaza cada decisión con su evidencia en el historial de la
 
 ## No determinismo (E7)
 
-PENDIENTE: la v3.1 de la Tarea A ejecutada 3 veces sobre H2, H3 y H9.
+La v3.1 se ejecutó 3 veces sobre H2, H3 y H9 (detalle en [criterios/no-determinismo.md](criterios/no-determinismo.md)).
+
+- **Resultado:** las 9 ejecuciones aprueban las mismas aserciones y toman la misma decisión. El texto, la cantidad de escenarios y los valores de ejemplo cambian; la similitud entre ejecuciones va de 0,07 a 0,59.
+- **Hallazgo:** en cada ejecución el modelo inventó niveles de gravedad distintos ("Alta/Media/Baja" y "Grave/Leve"), y ninguno coincide con los del Lab 07.
+- **Decisión:** se registra como mejora para la siguiente versión: fijar en el contexto del prompt los niveles leve, moderado, grave y colapso. Las aserciones siguen comprobando el contrato y no el texto.

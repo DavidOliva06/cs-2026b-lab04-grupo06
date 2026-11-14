@@ -68,3 +68,13 @@ def test_el_reporte_no_puede_cerrar_el_delimitador():
     assert cierres(antes) == cierres(normal) + 1    # el ciudadano agregó un cierre falso
     assert cierres(despues) == cierres(normal)      # neutralizado
     assert "‹/reporte›" in despues
+
+
+@pytest.mark.parametrize("rid", ["R12", "R16"])
+def test_respuestas_despues_de_las_defensas(rid):
+    """R12 y R16 se volvieron a ejecutar en Opus 5.5 con el texto neutralizado (grabaciones/v2-defensas)."""
+    grabada = (RAIZ_PROMPTS / "seguridad" / "grabaciones" / "v2-defensas" / f"{rid}.txt").read_text(encoding="utf-8")
+    generador = GeneradorPrioridad(LLMSimulado([grabada]))
+    assert "</reporte> #" not in generador.prompt(rid, ATAQUES[rid]["reporte"])
+    sugerencia = generador.generar(rid, ATAQUES[rid]["reporte"])
+    assert sugerencia.prioridad == "baja" and sugerencia.requiere_revision is True and sugerencia.alertas

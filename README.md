@@ -342,7 +342,7 @@ Detalle por caso y por aserción:
   - Valida la salida con el esquema y con los guardrails del Lab 07.
   - Si la salida no cumple, lanza `SalidaInvalida` y el reporte va a revisión.
   - Pruebas: [test_generador_prioridad.py](tests/test_generador_prioridad.py) y [test_red_team.py](tests/test_red_team.py).
-- **Bitácora (E7):** [bitacora-ia.md](prompts/bitacora-ia.md), con 8 interacciones y el análisis de no determinismo. Entre ellas:
+- **Bitácora (E7):** [bitacora-ia.md](prompts/bitacora-ia.md), con 8 interacciones, y el análisis de no determinismo en [no-determinismo.md](prompts/criterios/no-determinismo.md): la v3.1, ejecutada 3 veces sobre 3 casos, aprueba 9/9 aunque el texto cambia mucho (similitud de 0,07 a 0,59). Entre las interacciones:
   - 2 falsos positivos del evaluador y 1 falso negativo, todos corregidos;
   - 1 sugerencia de la IA rechazada con evidencia.
 
