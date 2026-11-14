@@ -23,6 +23,15 @@
       invest_ok true. Al menos un escenario de éxito (sin señal el reporte queda guardado como
       pendiente y se envía al volver la conexión) y al menos uno de error o borde (por ejemplo,
       sin foto o sin ubicación, o un reenvío que no duplica el reporte). Sin implementación.
+  assert:
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
 
 - description: "H2 (RF-02, normal): ver el mapa de daños filtrado"
   vars:
@@ -35,6 +44,15 @@
     esperado: >-
       invest_ok true. Éxito: filtrar por una zona o una gravedad muestra solo esos daños. Borde:
       un filtro sin resultados muestra un mensaje. Sin implementación.
+  assert:
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
 
 - description: "H3 (RF-03, normal): priorizar zonas"
   vars:
@@ -61,6 +79,15 @@
     esperado: >-
       invest_ok true. Éxito: la brigada queda asignada y el brigadista ve la zona. Error: no hay
       brigadas disponibles o la brigada ya está asignada. Sin implementación.
+  assert:
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
 
 - description: "H5 (RF-05, normal): marcar el avance de la brigada"
   vars:
@@ -73,6 +100,15 @@
     esperado: >-
       invest_ok true. Éxito: marcar "en camino" y luego "atendido" y que el coordinador lo vea.
       Error o borde: marcar "atendido" sin haber marcado "en camino", o no tener zona asignada.
+  assert:
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
 
 - description: "H6 (RF-07, normal): consultar el estado de un reporte propio"
   vars:
@@ -85,6 +121,15 @@
     esperado: >-
       invest_ok true. Éxito: ver el estado de un reporte propio. Borde: un reporte que sigue
       pendiente de envío en el celular. Sin implementación.
+  assert:
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
 
 - description: "H7 (no INVEST, ambigua): que funcione bien en un sismo"
   vars:
@@ -153,3 +198,11 @@
           const r = JSON.parse(output);
           return (r.escenarios || []).length >= 1 || (r.preguntas || []).length >= 1;
         } catch (e) { return true; }   // texto libre que no obedece: lo penaliza A1, no A5
+    # A6 (agregada en E3): una historia válida no se rechaza. Sin ella, la v3 "aprobaba" H2 y
+    # H6 aunque los rechazaba (falso negativo del evaluador frente al esperado escrito en E1).
+    - type: javascript
+      metric: A6_acepta_historia_valida
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return r.invest_ok === true;
