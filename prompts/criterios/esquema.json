@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/DavidOliva06/cs-2026b-lab04-grupo06/prompts/criterios/esquema.json",
   "title": "Criterios de aceptación de una historia de usuario (Tarea A, SismoReporta AQP)",
   "description": "Contrato de salida del prompt de criterios. Toda respuesta que no lo cumpla se rechaza.",
   "type": "object",

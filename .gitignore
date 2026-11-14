@@ -5,3 +5,6 @@ __pycache__/
 # Archivos de trabajo para ejecutar los prompts a mano (se regeneran con renderizar.py)
 prompts/*/ejecutar-*.txt
 prompts/*/respuestas-*.txt
+prompts/*/resultados*.json
+prompts/*/resultados*.html
+prompts/*/.promptfoo/
