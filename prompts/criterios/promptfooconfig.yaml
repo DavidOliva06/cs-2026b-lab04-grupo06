@@ -5,6 +5,8 @@ description: "SismoReporta AQP - Tarea A: criterios de aceptación en Gherkin (J
 prompts:
   - id: file://v1.txt
     label: v1
+  - id: file://v2.txt
+    label: v2
 
 providers:
   - id: file://../proveedor_grabado.py
