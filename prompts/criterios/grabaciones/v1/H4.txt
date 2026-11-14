@@ -1,0 +1,157 @@
+# Criterios de aceptación: Asignación de brigadas a zonas
+
+**Historia:** Como coordinador, quiero asignar una brigada disponible a una zona priorizada, para que los brigadistas sepan dónde intervenir.
+
+## 1. Brigadas disponibles
+
+**Escenario 1.1: Ver brigadas para asignar**
+- **Dado** que el coordinador seleccionó una zona del ranking de prioridad
+- **Cuando** toca "Asignar brigada"
+- **Entonces** ve la lista de brigadas de su jurisdicción con:
+  - Nombre o código de la brigada
+  - Estado (disponible, en camino, interviniendo, en descanso, fuera de servicio)
+  - Especialidad (búsqueda y rescate, primeros auxilios, evaluación estructural, logística, otra)
+  - Número de integrantes
+  - Última ubicación conocida y su antigüedad
+  - Distancia o tiempo estimado hasta la zona
+
+**Escenario 1.2: Orden y filtros**
+- **Dado** que el coordinador ve la lista de brigadas
+- **Entonces** las disponibles aparecen primero, ordenadas por cercanía a la zona
+- **Y** puede filtrar por especialidad y por estado
+
+**Escenario 1.3: Sugerencia según los reportes**
+- **Dado** que la zona tiene reportes con personas heridas
+- **Entonces** el sistema destaca como sugeridas las brigadas disponibles con especialidad en rescate o primeros auxilios
+- **Y** la sugerencia no impide elegir otra brigada
+
+**Escenario 1.4: Brigadas no disponibles**
+- **Dado** que una brigada está en otro estado distinto de "Disponible"
+- **Entonces** aparece en la lista pero no se puede asignar directamente
+- **Y** si está "En camino" o "Interviniendo", el coordinador puede reasignarla siguiendo el escenario 5.2
+
+**Escenario 1.5: Sin brigadas disponibles**
+- **Dado** que no hay ninguna brigada disponible en la jurisdicción
+- **Entonces** el sistema lo indica claramente
+- **Y** muestra cuál brigada se espera que termine antes su intervención actual, si se conoce
+- **Y** permite dejar la zona en una cola de "Pendiente de brigada"
+
+## 2. Asignación
+
+**Escenario 2.1: Asignar una brigada**
+- **Dado** que el coordinador eligió una brigada disponible
+- **Cuando** confirma la asignación
+- **Entonces** la brigada pasa a estado "Asignada" vinculada a esa zona
+- **Y** los reportes sin atender de la zona pasan a estado "Asignado"
+- **Y** el ranking de prioridad se recalcula según las reglas de la historia de priorización
+
+**Escenario 2.2: Instrucciones de la asignación**
+- **Dado** que el coordinador está asignando una brigada
+- **Entonces** puede seleccionar qué reportes de la zona debe atender la brigada (por defecto, todos los sin atender, ordenados por gravedad)
+- **Y** puede agregar instrucciones en texto libre
+- **Y** puede indicar un punto de encuentro o de acceso en el mapa
+
+**Escenario 2.3: Varias brigadas en una zona**
+- **Dado** que una zona ya tiene una brigada asignada
+- **Cuando** el coordinador asigna otra
+- **Entonces** el sistema lo permite y muestra un aviso de que la zona ya tiene una brigada
+- **Y** cada brigada puede recibir un subconjunto distinto de reportes
+
+**Escenario 2.4: Asignación simultánea**
+- **Dado** que dos coordinadores intentan asignar la misma brigada al mismo tiempo
+- **Entonces** solo se guarda la primera asignación
+- **Y** el segundo coordinador ve un mensaje indicando que la brigada acaba de ser asignada, por quién y a qué zona
+
+## 3. Notificación a la brigada
+
+**Escenario 3.1: Aviso a los brigadistas**
+- **Dado** que se confirmó una asignación
+- **Entonces** todos los integrantes de la brigada reciben una notificación en la app en menos de 30 segundos, si tienen conexión
+- **Y** la notificación muestra la zona, la cantidad de reportes por gravedad y si hay personas heridas
+
+**Escenario 3.2: Paquete de intervención**
+- **Dado** que un brigadista abre la asignación
+- **Entonces** ve la zona en el mapa, la lista de reportes asignados con fotos, ubicación, descripción e instrucciones, y el punto de encuentro
+- **Y** puede abrir la ruta en una app de navegación
+- **Y** todo este contenido, incluido el mapa de la zona, se descarga para consultarse sin conexión
+
+**Escenario 3.3: Brigada sin conexión de datos**
+- **Dado** que ningún integrante de la brigada tiene conexión de datos
+- **Entonces** el sistema envía un SMS con el código de asignación, la zona, el punto de encuentro y la cantidad de reportes críticos
+- **Y** el coordinador ve que la asignación se notificó solo por SMS
+
+**Escenario 3.4: Confirmación de recepción**
+- **Dado** que la brigada recibió la asignación
+- **Cuando** su jefe de brigada toca "Aceptar"
+- **Entonces** la brigada pasa a estado "En camino"
+- **Y** el coordinador ve la confirmación con la hora
+
+**Escenario 3.5: Asignación no confirmada**
+- **Dado** que la brigada no confirma la asignación en 5 minutos
+- **Entonces** el coordinador recibe una alerta
+- **Y** puede reenviar la notificación, intentar otro canal o reasignar la zona a otra brigada
+
+**Escenario 3.6: Brigada que no puede atender**
+- **Dado** que el jefe de brigada no puede atender la asignación (por ejemplo, vía bloqueada o falta de personal)
+- **Cuando** toca "No puedo atender" e indica un motivo
+- **Entonces** la brigada vuelve a su estado anterior
+- **Y** los reportes vuelven a "Sin atender"
+- **Y** el coordinador recibe una alerta con el motivo
+
+## 4. Seguimiento
+
+**Escenario 4.1: Estado de la brigada en el mapa**
+- **Dado** que una brigada está en camino o interviniendo
+- **Entonces** el coordinador ve su posición en el mapa de daños, actualizada cada 1 minuto mientras haya conexión
+- **Y** si no hay actualización, se muestra la última posición con su antigüedad
+
+**Escenario 4.2: Llegada e intervención**
+- **Dado** que la brigada llega a la zona
+- **Cuando** el jefe de brigada marca "En zona"
+- **Entonces** la brigada pasa a estado "Interviniendo"
+
+**Escenario 4.3: Cierre de reportes**
+- **Dado** que la brigada atendió un reporte
+- **Cuando** un brigadista lo marca como "Atendido" (con nota y foto opcional)
+- **Entonces** el estado se refleja para el coordinador al sincronizarse
+- **Y** si se marcó sin conexión, se envía en cuanto haya señal, con la hora real en que se marcó
+
+**Escenario 4.4: Fin de la intervención**
+- **Dado** que la brigada terminó en la zona
+- **Cuando** el jefe de brigada marca "Intervención finalizada"
+- **Entonces** la brigada vuelve a "Disponible" o pasa a "En descanso", según elija
+- **Y** los reportes asignados que no se marcaron como atendidos vuelven a "Sin atender" y se avisa al coordinador
+
+## 5. Cambios en la asignación
+
+**Escenario 5.1: Cancelar una asignación**
+- **Dado** que una brigada está asignada o en camino
+- **Cuando** el coordinador cancela la asignación e indica un motivo
+- **Entonces** la brigada recibe una notificación de cancelación
+- **Y** vuelve a "Disponible"
+- **Y** los reportes no atendidos vuelven a "Sin atender"
+
+**Escenario 5.2: Reasignar a otra zona**
+- **Dado** que una brigada está en camino o interviniendo
+- **Cuando** el coordinador la reasigna a otra zona e indica un motivo
+- **Entonces** el sistema pide confirmación explícita, mostrando la zona actual y la nueva
+- **Y** la brigada recibe la nueva asignación como una notificación prioritaria
+- **Y** los reportes de la zona anterior que no se marcaron como atendidos vuelven a "Sin atender"
+
+## 6. Criterios no funcionales
+
+- **Permisos:** solo usuarios con rol de coordinador pueden asignar, cancelar o reasignar brigadas de su jurisdicción.
+- **Auditoría:** cada asignación, confirmación, rechazo, cancelación y reasignación queda registrada con autor, hora y motivo.
+- **Fiabilidad:** ninguna asignación confirmada por el coordinador se pierde si falla la red; se reintenta hasta que la brigada la reciba o el coordinador la cancele.
+- **Rapidez:** asignar una brigada a una zona toma como máximo 3 toques desde el ranking de prioridad.
+- **Privacidad:** la ubicación de los brigadistas solo se registra mientras están en servicio.
+- **App de brigadas:** funciona en celulares de gama baja y con batería limitada; el envío de ubicación ajusta su frecuencia para no agotar la batería.
+
+## Preguntas abiertas para el equipo
+
+- ¿Cómo se registra la disponibilidad de una brigada al inicio de la emergencia: la marcan los propios brigadistas o la carga el coordinador?
+- ¿Se debe considerar el equipamiento de cada brigada (vehículos, herramientas de rescate, botiquín) al sugerir asignaciones?
+- ¿Las brigadas de otras jurisdicciones, de bomberos o de las Fuerzas Armadas también se gestionan en este sistema?
+- ¿El tiempo de 5 minutos para confirmar es adecuado en zonas rurales con poca cobertura?
+
+Los tiempos indicados son valores de partida; conviene validarlos con INDECI y con jefes de brigada en un simulacro.

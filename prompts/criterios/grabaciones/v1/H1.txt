@@ -1,0 +1,148 @@
+# Criterios de aceptación: Reporte de daños offline
+
+**Historia:** Como ciudadano afectado por un sismo, quiero registrar un reporte de daños con foto y ubicación aunque no tenga señal, para que Defensa Civil lo reciba en cuanto mi celular recupere la conexión.
+
+## 1. Registro sin conexión
+
+**Escenario 1.1: Crear un reporte sin señal**
+- **Dado** que el ciudadano no tiene conexión a internet ni datos móviles
+- **Cuando** abre la app y selecciona "Nuevo reporte de daños"
+- **Entonces** puede completar y guardar el reporte sin ningún mensaje de error por falta de conexión
+- **Y** la app muestra un aviso visible: "Sin conexión. Tu reporte se enviará automáticamente cuando recuperes señal."
+
+**Escenario 1.2: Campos mínimos del reporte**
+- **Dado** que el ciudadano está llenando un reporte
+- **Entonces** el formulario pide como obligatorios:
+  - Tipo de daño (vivienda, vía, persona herida, otro)
+  - Nivel de gravedad
+  - Al menos una foto
+  - La ubicación
+- **Y** pide como opcional una descripción breve
+- **Y** no permite guardar el reporte si falta un campo obligatorio, indicando cuál falta
+
+**Escenario 1.3: Apertura sin conexión previa**
+- **Dado** que la app ya fue instalada y abierta al menos una vez
+- **Cuando** el ciudadano la abre sin conexión
+- **Entonces** el formulario de reporte carga completo, sin depender de recursos remotos
+
+## 2. Foto
+
+**Escenario 2.1: Tomar o adjuntar foto**
+- **Dado** que el ciudadano está llenando un reporte
+- **Cuando** toca "Agregar foto"
+- **Entonces** puede tomar una foto con la cámara o elegir una de la galería
+- **Y** puede adjuntar hasta 3 fotos por reporte
+
+**Escenario 2.2: Compresión para redes débiles**
+- **Dado** que el ciudadano adjunta una foto
+- **Cuando** la app la guarda
+- **Entonces** la comprime a un máximo de 500 KB por foto (ajustable), manteniendo legibilidad de daños estructurales
+- **Y** conserva la fecha y hora de captura
+
+**Escenario 2.3: Permiso de cámara denegado**
+- **Dado** que el ciudadano negó el permiso de cámara
+- **Cuando** intenta agregar una foto
+- **Entonces** la app explica por qué necesita el permiso y ofrece abrir la configuración
+- **Y** permite adjuntar desde la galería como alternativa
+
+## 3. Ubicación
+
+**Escenario 3.1: Ubicación por GPS sin internet**
+- **Dado** que el ciudadano no tiene conexión de datos
+- **Cuando** crea un reporte
+- **Entonces** la app obtiene coordenadas por GPS sin necesitar internet
+- **Y** registra la precisión estimada en metros
+
+**Escenario 3.2: GPS no disponible o impreciso**
+- **Dado** que el GPS no logra una lectura o la precisión es peor a 100 m tras 30 segundos
+- **Cuando** el ciudadano intenta guardar el reporte
+- **Entonces** la app le permite guardar con la última ubicación conocida, indicando su antigüedad
+- **O** le permite ingresar una referencia manual (distrito, calle, referencia)
+- **Y** el reporte queda marcado como "ubicación aproximada"
+
+**Escenario 3.3: Permiso de ubicación denegado**
+- **Dado** que el ciudadano negó el permiso de ubicación
+- **Cuando** crea un reporte
+- **Entonces** la app solicita una referencia manual obligatoria (distrito + dirección o referencia)
+
+## 4. Almacenamiento local y cola de envío
+
+**Escenario 4.1: Persistencia del reporte**
+- **Dado** que el ciudadano guardó un reporte sin conexión
+- **Cuando** cierra la app, se reinicia el celular o se le agota la batería y lo vuelve a encender
+- **Entonces** el reporte sigue guardado y pendiente de envío, con sus fotos
+
+**Escenario 4.2: Varios reportes pendientes**
+- **Dado** que el ciudadano guardó varios reportes sin conexión
+- **Entonces** la app los muestra en una lista "Pendientes de envío" con fecha, tipo y estado
+- **Y** los envía en orden, del más antiguo al más reciente
+- **Y** prioriza los marcados con gravedad alta o con personas heridas
+
+**Escenario 4.3: Editar o eliminar antes del envío**
+- **Dado** que un reporte está pendiente de envío
+- **Entonces** el ciudadano puede editarlo o eliminarlo
+- **Y** una vez enviado, ya no puede editarlo, solo ver su estado
+
+## 5. Sincronización automática
+
+**Escenario 5.1: Envío al recuperar conexión**
+- **Dado** que hay reportes pendientes
+- **Cuando** el celular recupera conexión (datos móviles o Wi-Fi)
+- **Entonces** la app envía los reportes automáticamente, sin que el ciudadano tenga que abrirla
+- **Y** el envío inicia en un máximo de 2 minutos tras detectar la conexión, sujeto a las restricciones del sistema operativo
+
+**Escenario 5.2: Conexión intermitente**
+- **Dado** que la conexión se pierde durante el envío
+- **Cuando** se vuelve a recuperar
+- **Entonces** la app reintenta el envío, con espera creciente entre intentos
+- **Y** el reporte nunca se pierde ni queda a medias en el servidor
+
+**Escenario 5.3: Sin duplicados**
+- **Dado** que un reporte se reintentó varias veces
+- **Cuando** Defensa Civil lo recibe
+- **Entonces** queda registrado una sola vez, gracias a un identificador único generado en el celular al crear el reporte
+
+**Escenario 5.4: Envío priorizado de datos**
+- **Dado** que la conexión es débil
+- **Cuando** la app envía un reporte
+- **Entonces** envía primero los datos del reporte (tipo, gravedad, ubicación, hora) y luego las fotos
+- **Y** Defensa Civil puede ver el reporte aunque las fotos aún no hayan llegado
+
+**Escenario 5.5: Envío manual**
+- **Dado** que hay reportes pendientes y hay conexión
+- **Entonces** el ciudadano puede tocar "Enviar ahora" para forzar el envío
+
+## 6. Confirmación y estado
+
+**Escenario 6.1: Confirmación de recepción**
+- **Dado** que un reporte fue recibido por el servidor de Defensa Civil
+- **Entonces** su estado cambia de "Pendiente" a "Recibido por Defensa Civil"
+- **Y** el ciudadano recibe una notificación en el celular
+- **Y** se muestra un código de reporte que puede usar como referencia
+
+**Escenario 6.2: Fecha del evento vs. fecha de envío**
+- **Dado** que un reporte se creó offline y se envió horas después
+- **Cuando** Defensa Civil lo recibe
+- **Entonces** el reporte incluye por separado la fecha y hora de creación y la fecha y hora de recepción
+
+**Escenario 6.3: Rechazo por el servidor**
+- **Dado** que el servidor rechaza un reporte por un dato inválido
+- **Entonces** el ciudadano ve el motivo en lenguaje simple y puede corregirlo y reenviarlo
+
+## 7. Criterios no funcionales
+
+- **Usabilidad en emergencia:** un reporte con foto y ubicación automática se completa en menos de 60 segundos y en no más de 4 pantallas.
+- **Accesibilidad:** botones grandes, alto contraste, compatible con lectores de pantalla y legible con brillo bajo.
+- **Batería:** la detección de conexión y los reintentos no consumen batería de forma significativa; la app no mantiene el GPS encendido fuera del formulario.
+- **Almacenamiento:** si el espacio libre es insuficiente, la app avisa antes de tomar la foto, no después.
+- **Seguridad y privacidad:** los reportes guardados localmente están cifrados; las fotos no se copian a la galería pública salvo que el ciudadano lo elija; el envío usa HTTPS.
+- **Compatibilidad:** funciona en Android 9+ e iOS 15+, incluidos equipos de gama baja (2 GB de RAM).
+- **Idioma:** disponible en español; deseable en quechua y aimara.
+
+## Preguntas abiertas para el equipo
+
+- ¿Se requiere un canal alternativo por SMS para enviar al menos los datos básicos (sin foto) cuando solo hay señal de voz?
+- ¿Cuánto tiempo debe conservarse un reporte pendiente antes de alertar al ciudadano de que aún no se ha enviado?
+- ¿El ciudadano necesita registrarse con DNI, o se permiten reportes anónimos?
+
+Los límites numéricos (tamaño de foto, tiempos, precisión de GPS) son valores de partida razonables. Conviene validarlos con Defensa Civil (INDECI) y con el equipo técnico.

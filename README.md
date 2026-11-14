@@ -279,6 +279,18 @@ La violación de prueba está en la rama `prueba-violacion-fitness` (commits `3f
 - [ADR-007: API del mapa agregada por zona](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)
 - [ADR-008: Identificador de dispositivo con límite y un voto por zona](docs/architecture/adr/008-identificador-de-dispositivo.md)
 
+## Prompt engineering (Lab 09)
+
+Prompts versionados en [prompts/](prompts/), evaluados con promptfoo 0.118 sobre respuestas grabadas de Claude Opus 5.5 (esfuerzo Alto), un chat nuevo por caso.
+
+### Tarea A: criterios de aceptación en Gherkin (JSON)
+
+| Versión | Cambio | Casos aprobados | Tasa |
+|---|---|---|---|
+| v1 | Prompt ingenuo: "Escribe criterios de aceptación para esta historia de usuario" | 0/9 | 0 % |
+
+Detalle por caso y por aserción en [resultados.md](prompts/criterios/resultados.md).
+
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
 En definitiva el trabajo se agilizo utilizandolas para los procesos que no se tiene tanto conocimiento como el uso de mermaid y de puml.

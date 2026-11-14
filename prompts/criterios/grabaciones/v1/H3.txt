@@ -1,0 +1,130 @@
+# Criterios de aceptación: Priorización automática de zonas
+
+**Historia:** Como coordinador, quiero que el sistema ordene las zonas según la cantidad y la gravedad de sus reportes, para atender primero las más afectadas.
+
+## 1. Cálculo de la prioridad
+
+**Escenario 1.1: Puntaje por zona**
+- **Dado** que hay reportes recibidos en varias zonas
+- **Entonces** el sistema calcula para cada zona un puntaje de prioridad que combina la cantidad de reportes y su gravedad
+- **Y** cada reporte suma según su gravedad, con pesos iniciales de: crítica = 10, alta = 5, media = 2, baja = 1
+
+**Escenario 1.2: Personas heridas**
+- **Dado** que un reporte indica personas heridas
+- **Entonces** suma un peso adicional al puntaje de su zona (inicialmente +10)
+- **Y** una zona con al menos un reporte con personas heridas sin atender se ubica siempre por encima de las zonas que no tienen ninguno, sin importar su puntaje
+
+**Escenario 1.3: Gravedad sobre cantidad**
+- **Dado** que la zona A tiene 1 reporte crítico y la zona B tiene 3 reportes bajos
+- **Entonces** la zona A aparece primero
+- **Y** este comportamiento se valida con un conjunto de casos de prueba acordados con Defensa Civil
+
+**Escenario 1.4: Solo reportes sin atender**
+- **Dado** que algunos reportes de una zona están en estado "Atendido"
+- **Entonces** esos reportes no suman al puntaje de prioridad
+- **Y** los reportes en estado "Asignado" suman con un peso reducido (inicialmente 50 %), para no ocultar zonas con ayuda en camino pero aún sin resolver
+
+**Escenario 1.5: Reportes duplicados**
+- **Dado** que un coordinador marcó dos o más reportes como duplicados del mismo daño
+- **Entonces** cuentan como un solo reporte en el puntaje, con la gravedad más alta del grupo
+
+**Escenario 1.6: Ubicación aproximada**
+- **Dado** que un reporte tiene ubicación aproximada y su radio de incertidumbre cruza el límite entre dos zonas
+- **Entonces** se asigna a la zona donde cae su punto central
+- **Y** la zona muestra cuántos de sus reportes tienen ubicación aproximada
+
+## 2. Ranking de zonas
+
+**Escenario 2.1: Ver el ranking**
+- **Dado** que el coordinador abre la vista "Prioridad de zonas"
+- **Entonces** ve las zonas de su jurisdicción ordenadas de mayor a menor puntaje
+- **Y** cada fila muestra:
+  - Posición y nombre de la zona
+  - Puntaje de prioridad
+  - Cantidad de reportes por gravedad
+  - Cantidad de reportes con personas heridas
+  - Antigüedad del reporte crítico sin atender más antiguo
+  - Cantidad de reportes asignados y atendidos
+
+**Escenario 2.2: Nivel de zona**
+- **Dado** que el coordinador está en el ranking
+- **Cuando** elige el nivel de agrupación (departamento, provincia o distrito)
+- **Entonces** el ranking se recalcula con ese nivel
+- **Y** al hacer clic en una zona puede bajar al nivel siguiente para ver sus subzonas ordenadas
+
+**Escenario 2.3: Desempate**
+- **Dado** que dos zonas tienen el mismo puntaje
+- **Entonces** aparece primero la que tiene más reportes con personas heridas
+- **Y** si persiste el empate, la que tiene el reporte crítico sin atender más antiguo
+
+**Escenario 2.4: Zonas sin reportes**
+- **Dado** que una zona no tiene reportes sin atender
+- **Entonces** no aparece en el ranking por defecto
+- **Y** el coordinador puede activar "Mostrar zonas sin reportes" para verlas al final
+
+**Escenario 2.5: Integración con el mapa**
+- **Dado** que el coordinador está en el ranking
+- **Cuando** selecciona una zona
+- **Entonces** el mapa de daños se centra en ella y aplica el filtro de esa zona
+- **Y** en el mapa, las zonas se pueden colorear según su posición en el ranking
+
+## 3. Transparencia del puntaje
+
+**Escenario 3.1: Explicación del puntaje**
+- **Dado** que el coordinador ve el puntaje de una zona
+- **Cuando** pasa el cursor o toca el puntaje
+- **Entonces** ve el desglose: cuántos puntos aporta cada nivel de gravedad, las personas heridas y los reportes asignados
+
+**Escenario 3.2: Advertencia de datos incompletos**
+- **Dado** que una zona tiene pocos reportes y además poca cobertura de señal conocida
+- **Entonces** el ranking muestra un aviso de que la zona podría estar subrepresentada
+- **Y** la ausencia de reportes no se interpreta como ausencia de daños
+
+## 4. Actualización
+
+**Escenario 4.1: Recálculo automático**
+- **Dado** que llega un reporte nuevo, se cambia el estado de un reporte o se marcan duplicados
+- **Entonces** el ranking se recalcula y se actualiza en pantalla en menos de 10 segundos, sin recargar la página
+
+**Escenario 4.2: Cambios de posición visibles**
+- **Dado** que una zona sube o baja en el ranking
+- **Entonces** se indica con una flecha y la cantidad de posiciones que cambió
+- **Y** si una zona entra a los 5 primeros puestos, el coordinador recibe una alerta
+
+**Escenario 4.3: Estabilidad de la vista**
+- **Dado** que el coordinador está revisando una zona del ranking
+- **Cuando** el ranking se actualiza
+- **Entonces** la zona seleccionada sigue seleccionada y la vista no salta de posición de forma inesperada
+
+## 5. Ajuste y control humano
+
+**Escenario 5.1: Fijar prioridad manual**
+- **Dado** que el coordinador tiene información que el sistema no refleja (por ejemplo, un reporte telefónico o de una brigada)
+- **Cuando** fija manualmente la prioridad de una zona
+- **Entonces** la zona queda en la posición indicada con una marca de "Prioridad manual"
+- **Y** se registra quién la fijó, cuándo y un motivo obligatorio
+- **Y** la prioridad manual se puede quitar en cualquier momento
+
+**Escenario 5.2: Configurar pesos**
+- **Dado** que un usuario tiene rol de administrador
+- **Cuando** cambia los pesos de gravedad o de personas heridas
+- **Entonces** el ranking se recalcula con los nuevos pesos para todos los coordinadores
+- **Y** el cambio queda registrado con su autor, fecha y valores anteriores
+- **Y** los coordinadores sin rol de administrador no pueden modificar los pesos
+
+## 6. Criterios no funcionales
+
+- **Rendimiento:** el ranking se calcula en menos de 3 segundos con 50 000 reportes y todos los distritos del país.
+- **Consistencia:** todos los coordinadores ven el mismo ranking con los mismos datos y filtros.
+- **Auditoría:** se guarda un historial del ranking cada 15 minutos para revisar después qué información había disponible al tomar cada decisión.
+- **Exportación:** el ranking se puede exportar a CSV o PDF con fecha y hora de generación.
+- **Accesibilidad:** la posición y la gravedad se distinguen por texto e íconos, no solo por color.
+
+## Preguntas abiertas para el equipo
+
+- ¿Debe considerarse la población o la vulnerabilidad de cada zona (densidad, pobreza, tipo de construcción) además de los reportes?
+- ¿La antigüedad de un reporte crítico sin atender debe aumentar el puntaje con el paso del tiempo?
+- ¿Debe incluirse la capacidad de respuesta ya enviada a cada zona (brigadas, insumos), y no solo el estado de los reportes?
+- ¿Quién valida los pesos iniciales y con qué frecuencia se revisan?
+
+Los pesos y tiempos propuestos son valores de partida; conviene calibrarlos con INDECI usando datos de sismos anteriores antes de usarlos en una emergencia real.
