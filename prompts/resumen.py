@@ -34,8 +34,11 @@ def cargar(tarea: str):
 
 
 def tablas(filas) -> str:
-    versiones = list(dict.fromkeys(f["version"] for f in filas))
-    casos = list(dict.fromkeys(f["caso"] for f in filas))
+    def orden(texto: str):
+        return [int(n) if n.isdigit() else n for n in __import__("re").findall(r"\d+|\D+", texto)]
+
+    versiones = sorted(dict.fromkeys(f["version"] for f in filas), key=orden)
+    casos = sorted(dict.fromkeys(f["caso"] for f in filas), key=orden)
     metricas = sorted({m for f in filas for m in f["metricas"] if m})
     out = ["## Tasa de aprobación por versión", "",
            "| Versión | Casos aprobados | Tasa |", "|---|---|---|"]
