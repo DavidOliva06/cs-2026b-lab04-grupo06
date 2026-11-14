@@ -2,6 +2,8 @@
 
 Uso (desde la raíz del repositorio):
     python prompts/renderizar.py criterios v1            # escribe prompts/criterios/ejecutar-v1.txt
+    python prompts/renderizar.py seguridad v2 prioridad ataques.yaml
+        # red teaming: plantilla de prompts/prioridad/v2.txt y casos de prompts/seguridad/ataques.yaml
 
 Reemplaza {{id}} y {{historia}} (o cualquier variable de casos.yaml) igual que promptfoo y que
 generador_*.py, y genera también la plantilla respuestas-v1.txt con un marcador por caso.
@@ -25,10 +27,10 @@ def renderizar(plantilla: str, variables: dict) -> str:
     return re.sub(r"\{\{\s*(\w+)\s*\}\}", reemplazo, plantilla)
 
 
-def main(tarea: str, version: str) -> None:
+def main(tarea: str, version: str, tarea_plantilla: str | None = None, casos_yaml: str = "casos.yaml") -> None:
     carpeta = RAIZ / tarea
-    plantilla = (carpeta / f"{version}.txt").read_text(encoding="utf-8")
-    casos = yaml.safe_load((carpeta / "casos.yaml").read_text(encoding="utf-8"))
+    plantilla = (RAIZ / (tarea_plantilla or tarea) / f"{version}.txt").read_text(encoding="utf-8")
+    casos = yaml.safe_load((carpeta / casos_yaml).read_text(encoding="utf-8"))
     ejecutar, respuestas = [], []
     for caso in casos:
         cid = caso["vars"]["id"]
@@ -41,4 +43,4 @@ def main(tarea: str, version: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:5])
