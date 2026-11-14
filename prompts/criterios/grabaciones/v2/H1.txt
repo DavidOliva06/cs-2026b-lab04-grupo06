@@ -1,0 +1,189 @@
+{
+  "historia_id": "H1",
+  "invest_ok": true,
+  "preguntas": [
+    "¿Cuál es el tamaño máximo de foto permitido y a qué tamaño se debe comprimir antes de guardarla? (Los escenarios asumen un máximo de 10 MB y compresión a 1 MB o menos).",
+    "¿Cuántas fotos admite un reporte: una sola o varias? (Los escenarios asumen al menos una y como máximo tres).",
+    "¿Qué campos son obligatorios además de la foto y la ubicación: tipo de daño, nivel de gravedad, descripción, número de personas afectadas?",
+    "Si el GPS no da una posición, ¿la ubicación manual se ingresa como dirección y referencia en texto? ¿O se espera un mapa disponible sin conexión?",
+    "¿Durante cuánto tiempo debe conservarse un reporte pendiente en el dispositivo antes de avisar al ciudadano? ¿Existe un tiempo de caducidad?",
+    "¿El ciudadano puede editar o cancelar un reporte mientras está pendiente de envío?",
+    "¿Qué precisión mínima de GPS se considera aceptable? (Los escenarios asumen 50 metros o menos).",
+    "¿Se requiere que el ciudadano se identifique (DNI, teléfono) o los reportes pueden ser anónimos?"
+  ],
+  "escenarios": [
+    {
+      "titulo": "Registrar un reporte con conexión disponible",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano abrió SismoReporta AQP en su celular",
+        "que el celular tiene conexión a internet",
+        "que concedió permisos de cámara y ubicación"
+      ],
+      "cuando": "toma una foto del daño, la aplicación obtiene su ubicación GPS, completa los campos obligatorios y presiona \"Enviar reporte\"",
+      "entonces": [
+        "el reporte se envía al servidor de Defensa Civil",
+        "la aplicación muestra el estado \"Enviado\" junto con un código de reporte",
+        "el reporte aparece en el panel del coordinador de Defensa Civil con la foto, las coordenadas y la fecha y hora de registro"
+      ]
+    },
+    {
+      "titulo": "Registrar un reporte sin señal",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano tiene la aplicación instalada y la abrió al menos una vez con conexión",
+        "que el celular no tiene conexión a internet",
+        "que concedió permisos de cámara y ubicación"
+      ],
+      "cuando": "toma una foto del daño, la aplicación obtiene su ubicación GPS, completa los campos obligatorios y presiona \"Enviar reporte\"",
+      "entonces": [
+        "el reporte se guarda en el almacenamiento local del dispositivo",
+        "la aplicación muestra el mensaje \"Sin conexión: tu reporte se enviará automáticamente cuando recuperes la señal\"",
+        "el reporte aparece en \"Mis reportes\" con el estado \"Pendiente de envío\"",
+        "se registra la fecha y hora en que se creó el reporte"
+      ]
+    },
+    {
+      "titulo": "Envío automático al recuperar la conexión",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano tiene un reporte con estado \"Pendiente de envío\"",
+        "que el celular estaba sin conexión"
+      ],
+      "cuando": "el celular recupera la conexión a internet",
+      "entonces": [
+        "la aplicación envía el reporte pendiente sin que el ciudadano tenga que hacer nada",
+        "el estado del reporte cambia a \"Enviado\" y se muestra su código de reporte",
+        "Defensa Civil recibe el reporte con la fecha y hora original de creación, no la del envío",
+        "Defensa Civil recibe además la fecha y hora en que se sincronizó el reporte"
+      ]
+    },
+    {
+      "titulo": "Intentar enviar un reporte sin foto",
+      "tipo": "error",
+      "dado": [
+        "que el ciudadano está llenando un nuevo reporte",
+        "que la ubicación ya fue obtenida y los demás campos obligatorios están completos"
+      ],
+      "cuando": "presiona \"Enviar reporte\" sin haber adjuntado ninguna foto",
+      "entonces": [
+        "la aplicación no guarda ni envía el reporte",
+        "se muestra el mensaje \"Agrega al menos una foto del daño\"",
+        "los datos ya ingresados se conservan en el formulario"
+      ]
+    },
+    {
+      "titulo": "Ubicación GPS no disponible o permiso denegado",
+      "tipo": "error",
+      "dado": [
+        "que el ciudadano está llenando un nuevo reporte",
+        "que el permiso de ubicación fue denegado o el GPS no logra obtener una posición"
+      ],
+      "cuando": "la aplicación intenta obtener la ubicación del reporte",
+      "entonces": [
+        "se muestra el mensaje \"No pudimos obtener tu ubicación automáticamente\"",
+        "se habilitan los campos para ingresar manualmente el distrito, la dirección y una referencia",
+        "el reporte no puede enviarse hasta que tenga una ubicación GPS o una ubicación manual con distrito y dirección",
+        "si la ubicación es manual, el reporte queda marcado como \"Ubicación ingresada manualmente\""
+      ]
+    },
+    {
+      "titulo": "Fallo del servidor durante la sincronización",
+      "tipo": "error",
+      "dado": [
+        "que el ciudadano tiene un reporte \"Pendiente de envío\"",
+        "que el celular tiene conexión a internet"
+      ],
+      "cuando": "la aplicación intenta enviar el reporte y el servidor responde con un error o no responde",
+      "entonces": [
+        "el reporte permanece guardado en el dispositivo con el estado \"Pendiente de envío\"",
+        "la aplicación vuelve a intentar el envío automáticamente cada vez más espaciado",
+        "el reporte no se elimina del dispositivo hasta que el servidor confirme que lo recibió"
+      ]
+    },
+    {
+      "titulo": "Almacenamiento del dispositivo lleno",
+      "tipo": "error",
+      "dado": [
+        "que el celular no tiene conexión a internet",
+        "que el almacenamiento disponible no basta para guardar el reporte con su foto"
+      ],
+      "cuando": "el ciudadano presiona \"Enviar reporte\"",
+      "entonces": [
+        "se muestra el mensaje \"No hay espacio suficiente para guardar tu reporte. Libera espacio e inténtalo de nuevo\"",
+        "los datos del formulario se conservan mientras la aplicación siga abierta",
+        "no se muestra el reporte como guardado"
+      ]
+    },
+    {
+      "titulo": "Conexión que se corta en medio del envío",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano tiene un reporte \"Pendiente de envío\"",
+        "que la aplicación empezó a enviarlo"
+      ],
+      "cuando": "la conexión se pierde antes de que llegue la confirmación del servidor y luego se recupera",
+      "entonces": [
+        "la aplicación reenvía el reporte con el mismo identificador único",
+        "Defensa Civil tiene registrado un solo reporte, sin duplicados",
+        "el estado del reporte en el celular termina en \"Enviado\""
+      ]
+    },
+    {
+      "titulo": "El reporte pendiente se conserva tras cerrar la aplicación o reiniciar el celular",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano tiene un reporte \"Pendiente de envío\"",
+        "que el celular sigue sin conexión"
+      ],
+      "cuando": "cierra la aplicación o reinicia el celular y luego vuelve a abrir SismoReporta AQP",
+      "entonces": [
+        "el reporte sigue apareciendo en \"Mis reportes\" con el estado \"Pendiente de envío\"",
+        "la foto, la ubicación, los datos y la fecha y hora de creación están intactos",
+        "el reporte se envía en cuanto haya conexión"
+      ]
+    },
+    {
+      "titulo": "Varios reportes pendientes",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano registró tres reportes mientras no tenía señal",
+        "que los tres tienen el estado \"Pendiente de envío\""
+      ],
+      "cuando": "el celular recupera la conexión",
+      "entonces": [
+        "los tres reportes se envían en el orden en que fueron creados",
+        "cada reporte cambia a \"Enviado\" por separado a medida que el servidor confirma que lo recibió",
+        "si uno falla, los demás se siguen enviando y el que falló queda \"Pendiente de envío\""
+      ]
+    },
+    {
+      "titulo": "Foto de gran tamaño",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano está llenando un nuevo reporte",
+        "que la cámara de su celular genera fotos de 10 MB"
+      ],
+      "cuando": "adjunta la foto al reporte",
+      "entonces": [
+        "la aplicación comprime la foto a 1 MB o menos antes de guardarla",
+        "en la foto comprimida se siguen distinguiendo los daños",
+        "el reporte se puede guardar y enviar con normalidad"
+      ]
+    },
+    {
+      "titulo": "Ubicación con baja precisión",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano está llenando un nuevo reporte sin conexión",
+        "que el GPS solo consigue una precisión mayor a 50 metros"
+      ],
+      "cuando": "la aplicación registra la ubicación",
+      "entonces": [
+        "se muestra el aviso \"Ubicación aproximada\" y la opción de agregar una referencia en texto",
+        "el reporte se guarda junto con el valor de precisión del GPS",
+        "Defensa Civil ve en el reporte que la ubicación es aproximada"
+      ]
+    }
+  ]
+}

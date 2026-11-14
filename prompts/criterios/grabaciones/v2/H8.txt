@@ -1,0 +1,144 @@
+{
+  "historia_id": "H8",
+  "invest_ok": false,
+  "preguntas": [
+    "La historia no cumple INVEST como historia de usuario: el rol \"desarrollador\" no es un usuario del producto, no dice para qué (no muestra valor para ciudadanos, coordinadores ni brigadistas) y dicta la solución técnica, así que no es negociable. Propongo reformularla como habilitador técnico con un objetivo comprobable, por ejemplo: \"Para que los reportes se procesen en paralelo, sin perderse ni procesarse dos veces durante la reconexión masiva (H7)\", o tratarla como tarea técnica dentro de H1 o H7. SELECT ... FOR UPDATE SKIP LOCKED sería la forma de lograrlo, no el criterio de aceptación. Los escenarios que siguen verifican el comportamiento esperado de la cola con umbrales supuestos.",
+    "¿Qué trabajos procesa la cola: compresión de fotos, asignar el distrito a cada reporte, recalcular el ranking de H3, enviar notificaciones de H4? ¿Todos tienen la misma prioridad?",
+    "¿El trabajo se procesa dentro de la misma transacción que lo bloquea, o se reclama cambiando su estado a \"En proceso\" con un tiempo límite y se procesa fuera de la transacción? La segunda opción evita mantener transacciones y conexiones abiertas en trabajos largos. (Los escenarios asumen la segunda, con un límite de 5 minutos).",
+    "¿Cuántos reintentos se permiten antes de marcar un trabajo como fallido? (Los escenarios asumen 5, con esperas crecientes entre intentos).",
+    "La cola garantiza que cada trabajo se complete al menos una vez, no exactamente una vez: si un proceso cae después de ejecutar un efecto, como enviar una notificación, el trabajo se repetirá. ¿Se acepta exigir que cada tipo de trabajo sea idempotente?",
+    "¿Cuántos procesos trabajadores habrá y qué volumen de trabajos debe soportar? (Los escenarios asumen 10 procesos y 500 trabajos por minuto, en línea con H7).",
+    "¿Los procesos esperan trabajos nuevos consultando periódicamente o con LISTEN/NOTIFY de PostgreSQL?"
+  ],
+  "escenarios": [
+    {
+      "titulo": "Un proceso toma un trabajo pendiente",
+      "tipo": "exito",
+      "dado": [
+        "que la cola tiene un trabajo con estado \"Pendiente\" y fecha de ejecución ya cumplida"
+      ],
+      "cuando": "un proceso trabajador solicita el siguiente trabajo",
+      "entonces": [
+        "el proceso obtiene ese trabajo",
+        "el trabajo cambia al estado \"En proceso\" con el identificador del proceso y la hora de inicio",
+        "al terminar con éxito, el trabajo cambia al estado \"Completado\""
+      ]
+    },
+    {
+      "titulo": "Varios procesos trabajan en paralelo sin repetir ni esperarse",
+      "tipo": "exito",
+      "dado": [
+        "que la cola tiene 1 000 trabajos pendientes",
+        "que hay 10 procesos trabajadores activos"
+      ],
+      "cuando": "todos los procesos toman trabajos al mismo tiempo hasta vaciar la cola",
+      "entonces": [
+        "cada trabajo se completa exactamente una vez",
+        "ningún proceso queda esperando a que otro libere un trabajo bloqueado",
+        "no se registran bloqueos mutuos (deadlocks) en PostgreSQL"
+      ]
+    },
+    {
+      "titulo": "Se atienden primero los trabajos más prioritarios y antiguos",
+      "tipo": "exito",
+      "dado": [
+        "que la cola tiene trabajos de prioridad alta y baja creados en momentos distintos",
+        "que hay un solo proceso trabajador activo"
+      ],
+      "cuando": "el proceso toma trabajos uno por uno",
+      "entonces": [
+        "los toma en orden de prioridad y, dentro de la misma prioridad, del más antiguo al más reciente"
+      ]
+    },
+    {
+      "titulo": "Volumen sostenido durante una emergencia",
+      "tipo": "exito",
+      "dado": [
+        "que hay 10 procesos trabajadores activos"
+      ],
+      "cuando": "llegan 500 trabajos por minuto durante 60 minutos",
+      "entonces": [
+        "la cola no crece de forma sostenida",
+        "el 95 % de los trabajos empieza a procesarse en 10 segundos o menos desde su creación"
+      ]
+    },
+    {
+      "titulo": "El trabajo falla durante el procesamiento",
+      "tipo": "error",
+      "dado": [
+        "que un proceso tomó un trabajo"
+      ],
+      "cuando": "el procesamiento lanza un error",
+      "entonces": [
+        "el trabajo vuelve al estado \"Pendiente\" con su contador de intentos aumentado en 1",
+        "su nueva fecha de ejecución se pospone según la espera creciente configurada",
+        "se registra el mensaje de error asociado al trabajo"
+      ]
+    },
+    {
+      "titulo": "El proceso trabajador muere a mitad del trabajo",
+      "tipo": "error",
+      "dado": [
+        "que un proceso tomó un trabajo y lo tiene \"En proceso\""
+      ],
+      "cuando": "el proceso se detiene de golpe o pierde la conexión con la base de datos",
+      "entonces": [
+        "pasado el límite de 5 minutos, el trabajo vuelve a quedar disponible",
+        "otro proceso lo toma y lo completa",
+        "el trabajo no queda bloqueado de forma indefinida"
+      ]
+    },
+    {
+      "titulo": "Trabajo que agota sus reintentos",
+      "tipo": "error",
+      "dado": [
+        "que un trabajo falló en sus primeros 4 intentos"
+      ],
+      "cuando": "falla también en el quinto intento",
+      "entonces": [
+        "el trabajo cambia al estado \"Fallido\" y ningún proceso vuelve a tomarlo",
+        "se genera una alerta para el equipo de operación con el identificador y el último error",
+        "los demás trabajos de la cola se siguen procesando con normalidad"
+      ]
+    },
+    {
+      "titulo": "Cola vacía",
+      "tipo": "borde",
+      "dado": [
+        "que no hay trabajos pendientes"
+      ],
+      "cuando": "un proceso trabajador solicita el siguiente trabajo",
+      "entonces": [
+        "la solicitud responde de inmediato sin trabajo y sin dejar una transacción abierta",
+        "el proceso espera antes de volver a consultar o hasta recibir aviso de un trabajo nuevo",
+        "la consulta repetida no satura la base de datos"
+      ]
+    },
+    {
+      "titulo": "Trabajo programado para el futuro",
+      "tipo": "borde",
+      "dado": [
+        "que un trabajo pendiente tiene fecha de ejecución dentro de 2 minutos"
+      ],
+      "cuando": "un proceso solicita el siguiente trabajo antes de esa fecha",
+      "entonces": [
+        "el proceso no toma ese trabajo",
+        "el trabajo se toma solo cuando llega su fecha de ejecución"
+      ]
+    },
+    {
+      "titulo": "Un trabajo se repite después de haber producido su efecto",
+      "tipo": "borde",
+      "dado": [
+        "que un proceso envió la notificación de una asignación de brigada",
+        "que el proceso murió antes de marcar el trabajo como \"Completado\""
+      ],
+      "cuando": "otro proceso toma de nuevo ese trabajo",
+      "entonces": [
+        "detecta que la notificación ya fue enviada usando el identificador del trabajo",
+        "no envía una segunda notificación a los brigadistas",
+        "marca el trabajo como \"Completado\""
+      ]
+    }
+  ]
+}

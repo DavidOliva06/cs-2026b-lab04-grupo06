@@ -1,0 +1,167 @@
+{
+  "historia_id": "H3",
+  "invest_ok": false,
+  "preguntas": [
+    "La historia no define cómo se combinan la cantidad y la gravedad para ordenar las zonas, y esa regla es el núcleo de la historia: sin ella no es estimable ni comprobable. Los escenarios asumen que cada reporte suma puntos según su gravedad (Leve 1, Moderado 3, Grave 5, Crítico 10) y que la zona con más puntos va primero. ¿Defensa Civil valida esta regla o tiene un criterio oficial propio?",
+    "¿Qué es una \"zona\" para el ranking? (Los escenarios asumen los distritos de la provincia de Arequipa, igual que en H2).",
+    "¿Qué reportes cuentan para el puntaje? (Los escenarios asumen que solo cuentan los reportes con estado distinto de \"Atendido\").",
+    "¿Cómo se desempata entre zonas con el mismo puntaje? (Los escenarios asumen primero por más reportes Crítico y luego por el reporte pendiente más antiguo).",
+    "¿Se deben detectar reportes duplicados del mismo daño antes de contarlos, para que una zona no suba de prioridad solo porque muchos vecinos reportaron el mismo edificio?",
+    "¿El puntaje debe considerar otros factores, como personas atrapadas, hospitales o colegios afectados, o el tiempo que lleva un reporte sin atención?",
+    "¿Qué gravedad se usa si el coordinador corrige la que declaró el ciudadano? (Los escenarios asumen que se usa la gravedad validada por el coordinador)."
+  ],
+  "escenarios": [
+    {
+      "titulo": "Ver las zonas ordenadas por prioridad",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador inició sesión con el rol \"Coordinador de Defensa Civil\"",
+        "que Cayma tiene 2 reportes Crítico y 1 reporte Leve pendientes (21 puntos)",
+        "que Yanahuara tiene 3 reportes Grave pendientes (15 puntos)",
+        "que Paucarpata tiene 10 reportes Leve pendientes (10 puntos)"
+      ],
+      "cuando": "abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "las zonas aparecen en este orden: 1. Cayma, 2. Yanahuara, 3. Paucarpata",
+        "cada zona muestra su puntaje, su total de reportes pendientes y la cantidad de reportes por cada nivel de gravedad",
+        "se muestra la fecha y hora de la última actualización del ranking"
+      ]
+    },
+    {
+      "titulo": "La gravedad pesa más que la cantidad",
+      "tipo": "exito",
+      "dado": [
+        "que Tiabaya tiene 1 reporte Crítico pendiente (10 puntos)",
+        "que Sachaca tiene 9 reportes Leve pendientes (9 puntos)"
+      ],
+      "cuando": "el coordinador abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "Tiabaya aparece antes que Sachaca aunque tenga menos reportes"
+      ]
+    },
+    {
+      "titulo": "El ranking se actualiza al llegar nuevos reportes",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Prioridad de zonas\"",
+        "que Yanahuara está en segundo lugar con 15 puntos y Cayma en primero con 21 puntos"
+      ],
+      "cuando": "Defensa Civil recibe un nuevo reporte Crítico en Yanahuara",
+      "entonces": [
+        "el puntaje de Yanahuara sube a 25 puntos",
+        "Yanahuara pasa al primer lugar y Cayma al segundo en 30 segundos o menos sin recargar la página",
+        "la zona que cambió de posición se destaca visualmente"
+      ]
+    },
+    {
+      "titulo": "Una zona baja de prioridad cuando sus reportes son atendidos",
+      "tipo": "exito",
+      "dado": [
+        "que Cayma está en primer lugar con 2 reportes Crítico y 1 reporte Leve pendientes"
+      ],
+      "cuando": "los 2 reportes Crítico de Cayma cambian al estado \"Atendido\"",
+      "entonces": [
+        "el puntaje de Cayma baja a 1 punto",
+        "Cayma pasa a la posición que le corresponde según su nuevo puntaje"
+      ]
+    },
+    {
+      "titulo": "Ver en el mapa los reportes de una zona del ranking",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Prioridad de zonas\""
+      ],
+      "cuando": "selecciona la zona \"Cayma\"",
+      "entonces": [
+        "se abre la vista \"Mapa de daños\" con el filtro de zona \"Cayma\" aplicado",
+        "solo se muestran los reportes pendientes de Cayma"
+      ]
+    },
+    {
+      "titulo": "Usuario sin rol de coordinador intenta ver el ranking",
+      "tipo": "error",
+      "dado": [
+        "que un usuario inició sesión con el rol \"Ciudadano\" o \"Brigadista\""
+      ],
+      "cuando": "intenta acceder a la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "se le niega el acceso",
+        "se muestra el mensaje \"No tienes permisos para ver esta sección\""
+      ]
+    },
+    {
+      "titulo": "Pérdida de conexión mientras se consulta el ranking",
+      "tipo": "error",
+      "dado": [
+        "que el coordinador está en la vista \"Prioridad de zonas\" con el ranking ya cargado"
+      ],
+      "cuando": "su dispositivo pierde la conexión a internet",
+      "entonces": [
+        "el último ranking cargado sigue visible",
+        "se muestra el aviso \"Sin conexión. Prioridades actualizadas al\" seguido de la fecha y hora de la última actualización",
+        "al recuperar la conexión, el ranking se recalcula y el aviso desaparece"
+      ]
+    },
+    {
+      "titulo": "Empate de puntaje entre zonas",
+      "tipo": "borde",
+      "dado": [
+        "que Socabaya tiene 2 reportes Crítico pendientes (20 puntos)",
+        "que Hunter tiene 1 reporte Crítico y 2 reportes Grave pendientes (20 puntos)"
+      ],
+      "cuando": "el coordinador abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "Socabaya aparece antes que Hunter por tener más reportes Crítico",
+        "si también empataran en reportes Crítico, aparecería primero la zona con el reporte pendiente más antiguo"
+      ]
+    },
+    {
+      "titulo": "Corrección de la gravedad de un reporte",
+      "tipo": "borde",
+      "dado": [
+        "que un reporte de Paucarpata fue registrado por el ciudadano como Leve"
+      ],
+      "cuando": "el coordinador cambia la gravedad de ese reporte a Crítico",
+      "entonces": [
+        "el puntaje de Paucarpata aumenta 9 puntos",
+        "el ranking se reordena según el nuevo puntaje"
+      ]
+    },
+    {
+      "titulo": "Reportes que no se pueden asignar a una zona",
+      "tipo": "borde",
+      "dado": [
+        "que existen reportes sin coordenadas y sin distrito reconocible"
+      ],
+      "cuando": "el coordinador abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "esos reportes no suman puntos a ninguna zona",
+        "se muestran aparte en \"Reportes sin zona asignada\" con su cantidad y gravedad",
+        "los reportes con ubicación manual que sí indican un distrito suman a ese distrito"
+      ]
+    },
+    {
+      "titulo": "Zonas sin reportes pendientes",
+      "tipo": "borde",
+      "dado": [
+        "que el distrito de Mariano Melgar no tiene reportes pendientes"
+      ],
+      "cuando": "el coordinador abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "Mariano Melgar aparece al final del ranking con 0 puntos o en una sección \"Sin reportes pendientes\""
+      ]
+    },
+    {
+      "titulo": "No hay ningún reporte registrado",
+      "tipo": "borde",
+      "dado": [
+        "que no existe ningún reporte pendiente en el sistema"
+      ],
+      "cuando": "el coordinador abre la vista \"Prioridad de zonas\"",
+      "entonces": [
+        "se muestra el mensaje \"Aún no hay reportes de daños para priorizar\"",
+        "no se muestra ningún ranking"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "historia_id": "H2",
+  "invest_ok": true,
+  "preguntas": [
+    "¿Quién define la gravedad de un reporte: el ciudadano al registrarlo, el coordinador al revisarlo, o ambos (gravedad declarada y gravedad validada)? ¿Qué niveles existen? (Los escenarios asumen Leve, Moderado, Grave y Crítico).",
+    "¿Qué se entiende por \"zona\": distrito, sector definido por Defensa Civil o un área que el coordinador dibuja en el mapa? (Los escenarios asumen los distritos de la provincia de Arequipa).",
+    "¿Cada cuánto debe actualizarse el mapa con los nuevos reportes: en tiempo real o por intervalos? (Los escenarios asumen un máximo de 30 segundos).",
+    "¿Cómo deben mostrarse en el mapa los reportes con ubicación manual sin coordenadas? (Los escenarios asumen una lista aparte de \"Reportes sin coordenadas\").",
+    "¿El coordinador usará el mapa en zonas de baja conectividad? ¿Se requiere que el mapa funcione sin conexión con los últimos datos descargados?",
+    "¿El mapa debe mostrar todos los reportes o solo los que no han sido atendidos? ¿Se necesita además un filtro por estado (nuevo, asignado, atendido)?",
+    "¿Qué volumen de reportes se espera en las primeras horas tras un sismo fuerte? (Los escenarios asumen hasta 5 000 reportes y que el mapa cargue en 3 segundos o menos)."
+  ],
+  "escenarios": [
+    {
+      "titulo": "Ver los daños reportados en el mapa",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador inició sesión con el rol \"Coordinador de Defensa Civil\"",
+        "que existen reportes de daños registrados con coordenadas"
+      ],
+      "cuando": "abre la vista \"Mapa de daños\"",
+      "entonces": [
+        "cada reporte se muestra como un marcador en su ubicación",
+        "el color del marcador corresponde a la gravedad del reporte según una leyenda visible",
+        "se muestra el total de reportes visibles en el mapa"
+      ]
+    },
+    {
+      "titulo": "Ver el detalle de un reporte desde el mapa",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\""
+      ],
+      "cuando": "selecciona un marcador",
+      "entonces": [
+        "se muestra la foto del daño, la gravedad, el distrito, la dirección o referencia, la fecha y hora de creación y el estado del reporte",
+        "se muestra el código del reporte"
+      ]
+    },
+    {
+      "titulo": "Filtrar por zona",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\"",
+        "que hay reportes en los distritos de Cayma, Yanahuara y Paucarpata"
+      ],
+      "cuando": "selecciona el distrito \"Cayma\" en el filtro de zona",
+      "entonces": [
+        "el mapa muestra solo los reportes ubicados en Cayma",
+        "el mapa se centra y ajusta su acercamiento a Cayma",
+        "el total de reportes visibles se actualiza"
+      ]
+    },
+    {
+      "titulo": "Filtrar por gravedad",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\"",
+        "que hay reportes de gravedad Leve, Moderado, Grave y Crítico"
+      ],
+      "cuando": "selecciona las gravedades \"Grave\" y \"Crítico\" en el filtro de gravedad",
+      "entonces": [
+        "el mapa muestra solo los reportes de gravedad Grave o Crítico",
+        "el total de reportes visibles se actualiza"
+      ]
+    },
+    {
+      "titulo": "Combinar filtros de zona y gravedad",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\""
+      ],
+      "cuando": "selecciona el distrito \"Paucarpata\" y la gravedad \"Crítico\"",
+      "entonces": [
+        "el mapa muestra solo los reportes que cumplen ambas condiciones a la vez",
+        "los filtros activos se muestran visibles sobre el mapa"
+      ]
+    },
+    {
+      "titulo": "Limpiar los filtros",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador tiene filtros de zona y gravedad aplicados"
+      ],
+      "cuando": "presiona \"Limpiar filtros\"",
+      "entonces": [
+        "el mapa vuelve a mostrar todos los reportes",
+        "el mapa vuelve a la vista general de la provincia de Arequipa"
+      ]
+    },
+    {
+      "titulo": "Nuevos reportes llegan mientras el coordinador ve el mapa",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\" con el filtro de gravedad \"Crítico\" aplicado"
+      ],
+      "cuando": "Defensa Civil recibe un nuevo reporte de gravedad Crítico",
+      "entonces": [
+        "el nuevo marcador aparece en el mapa en 30 segundos o menos sin recargar la página",
+        "el marcador nuevo se destaca visualmente como \"Nuevo\"",
+        "los filtros aplicados se mantienen"
+      ]
+    },
+    {
+      "titulo": "Usuario sin rol de coordinador intenta acceder al mapa",
+      "tipo": "error",
+      "dado": [
+        "que un usuario inició sesión con el rol \"Ciudadano\" o \"Brigadista\""
+      ],
+      "cuando": "intenta acceder a la vista \"Mapa de daños\" del coordinador",
+      "entonces": [
+        "se le niega el acceso",
+        "se muestra el mensaje \"No tienes permisos para ver esta sección\"",
+        "no se exponen fotos ni datos de los reportes"
+      ]
+    },
+    {
+      "titulo": "Pérdida de conexión mientras se usa el mapa",
+      "tipo": "error",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\" con reportes ya cargados"
+      ],
+      "cuando": "su dispositivo pierde la conexión a internet",
+      "entonces": [
+        "los marcadores ya cargados siguen visibles y los filtros siguen funcionando sobre ellos",
+        "se muestra el aviso \"Sin conexión. Datos actualizados al\" seguido de la fecha y hora de la última actualización",
+        "al recuperar la conexión, el mapa se actualiza automáticamente y el aviso desaparece"
+      ]
+    },
+    {
+      "titulo": "Filtros sin resultados",
+      "tipo": "borde",
+      "dado": [
+        "que el coordinador está en la vista \"Mapa de daños\"",
+        "que no hay reportes de gravedad Crítico en el distrito de Sachaca"
+      ],
+      "cuando": "selecciona el distrito \"Sachaca\" y la gravedad \"Crítico\"",
+      "entonces": [
+        "el mapa no muestra marcadores",
+        "se muestra el mensaje \"No hay reportes que coincidan con los filtros seleccionados\"",
+        "se ofrece la opción \"Limpiar filtros\""
+      ]
+    },
+    {
+      "titulo": "Muchos reportes en un área pequeña",
+      "tipo": "borde",
+      "dado": [
+        "que hay 200 reportes concentrados en pocas manzanas del mismo distrito"
+      ],
+      "cuando": "el coordinador ve esa área con poco acercamiento",
+      "entonces": [
+        "los marcadores cercanos se agrupan en un solo indicador con el número de reportes",
+        "el indicador del grupo muestra la gravedad más alta de los reportes que contiene",
+        "al acercarse o seleccionar el grupo, se separan los marcadores individuales"
+      ]
+    },
+    {
+      "titulo": "Alto volumen de reportes tras un sismo fuerte",
+      "tipo": "borde",
+      "dado": [
+        "que existen 5 000 reportes registrados"
+      ],
+      "cuando": "el coordinador abre la vista \"Mapa de daños\"",
+      "entonces": [
+        "el mapa carga y muestra los reportes en 3 segundos o menos",
+        "aplicar o quitar un filtro actualiza el mapa en 1 segundo o menos"
+      ]
+    },
+    {
+      "titulo": "Reportes sin coordenadas o con ubicación aproximada",
+      "tipo": "borde",
+      "dado": [
+        "que existen reportes con ubicación ingresada manualmente sin coordenadas",
+        "que existen reportes marcados como \"Ubicación aproximada\""
+      ],
+      "cuando": "el coordinador abre la vista \"Mapa de daños\"",
+      "entonces": [
+        "los reportes sin coordenadas aparecen en la lista \"Reportes sin coordenadas\" con su distrito, dirección y referencia",
+        "esa lista respeta los filtros de zona y gravedad aplicados",
+        "los reportes con ubicación aproximada se muestran en el mapa con un indicador distinto y su radio de precisión"
+      ]
+    }
+  ]
+}

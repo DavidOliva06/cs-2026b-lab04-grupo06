@@ -1,0 +1,134 @@
+{
+  "historia_id": "H7",
+  "invest_ok": false,
+  "preguntas": [
+    "La historia no cumple INVEST y no se puede aceptar tal como está: el rol \"usuario\" es genérico, no dice para qué (falta el beneficio), \"bien y rápido\" no es medible y por eso no es estimable ni comprobable, y abarca toda la aplicación, así que no es pequeña. Propongo tratarla como un requisito no funcional: agregar sus umbrales a la Definición de Hecho de H1 a H6, o dividirla en historias concretas (rendimiento con red lenta, carga masiva, disponibilidad, reconexión masiva). Los escenarios que siguen son una propuesta con umbrales supuestos para refinarlos con el Product Owner.",
+    "¿Qué significa \"rápido\" para cada rol y para qué acciones? (Los escenarios asumen: primera carga en 5 segundos o menos con red 3G lenta, cargas siguientes en 2 segundos o menos, y guardar un reporte en 2 segundos o menos).",
+    "¿Qué carga se espera en la primera hora después de un sismo fuerte? (Los escenarios asumen 50 000 usuarios simultáneos y 500 reportes por minuto).",
+    "¿En qué celulares y redes debe funcionar? (Los escenarios asumen Android de gama baja con 2 GB de RAM y red 3G congestionada).",
+    "¿Qué disponibilidad se exige durante una emergencia y dónde estarán los servidores? Si están en Arequipa, el mismo sismo podría dejarlos fuera de servicio. (Los escenarios asumen 99,9 % y servidores fuera de la región).",
+    "¿Hay límites de consumo de datos móviles y de batería? Muchos ciudadanos pueden tener saldo limitado y no poder cargar el celular por cortes de luz.",
+    "¿Qué flujos son críticos y deben priorizarse si el sistema se satura? (Los escenarios asumen que recibir reportes ciudadanos es lo más importante)."
+  ],
+  "escenarios": [
+    {
+      "titulo": "Primera carga con red lenta en un celular de gama baja",
+      "tipo": "exito",
+      "dado": [
+        "que el usuario tiene un celular Android de gama baja con 2 GB de RAM",
+        "que la red es 3G con latencia de 400 ms y 400 kbps de bajada"
+      ],
+      "cuando": "abre SismoReporta AQP por primera vez",
+      "entonces": [
+        "la pantalla principal se puede usar en 5 segundos o menos",
+        "la descarga inicial no supera 1 MB",
+        "la aplicación queda guardada en el dispositivo para funcionar sin conexión"
+      ]
+    },
+    {
+      "titulo": "Cargas siguientes desde el dispositivo",
+      "tipo": "exito",
+      "dado": [
+        "que el usuario ya abrió la aplicación al menos una vez"
+      ],
+      "cuando": "vuelve a abrirla con o sin conexión",
+      "entonces": [
+        "la pantalla principal se puede usar en 2 segundos o menos",
+        "el formulario de reporte está disponible aunque no haya conexión"
+      ]
+    },
+    {
+      "titulo": "Guardar un reporte es inmediato aunque la red esté lenta",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano completó un reporte con foto y ubicación",
+        "que la red es lenta o no hay conexión"
+      ],
+      "cuando": "presiona \"Enviar reporte\"",
+      "entonces": [
+        "la aplicación confirma que el reporte quedó guardado en 2 segundos o menos",
+        "el envío al servidor ocurre en segundo plano sin bloquear la pantalla"
+      ]
+    },
+    {
+      "titulo": "Carga masiva en la primera hora después del sismo",
+      "tipo": "exito",
+      "dado": [
+        "que hay 50 000 usuarios simultáneos",
+        "que llegan 500 reportes por minuto durante 60 minutos"
+      ],
+      "cuando": "se ejecuta la prueba de carga",
+      "entonces": [
+        "el 95 % de los envíos de reportes recibe confirmación del servidor en 3 segundos o menos",
+        "menos del 1 % de las solicitudes falla",
+        "el mapa y el ranking del coordinador siguen actualizándose en 30 segundos o menos"
+      ]
+    },
+    {
+      "titulo": "Servidor saturado",
+      "tipo": "error",
+      "dado": [
+        "que el servidor supera su capacidad y rechaza solicitudes"
+      ],
+      "cuando": "un ciudadano intenta enviar un reporte",
+      "entonces": [
+        "el reporte queda guardado en el dispositivo con el estado \"Pendiente de envío\"",
+        "se muestra el mensaje \"El sistema está recibiendo muchos reportes. El tuyo está guardado y se enviará automáticamente\"",
+        "la aplicación no muestra una pantalla en blanco ni pierde datos",
+        "la recepción de reportes ciudadanos tiene prioridad sobre las consultas de estado"
+      ]
+    },
+    {
+      "titulo": "Falla de un servidor durante la emergencia",
+      "tipo": "error",
+      "dado": [
+        "que la aplicación funciona con al menos dos servidores en ubicaciones distintas fuera de Arequipa"
+      ],
+      "cuando": "uno de los servidores deja de funcionar",
+      "entonces": [
+        "el tráfico pasa al servidor que sigue activo en 60 segundos o menos",
+        "no se pierde ningún reporte ya confirmado",
+        "la disponibilidad medida durante la emergencia es de 99,9 % o más"
+      ]
+    },
+    {
+      "titulo": "Reconexión masiva cuando vuelve la señal",
+      "tipo": "borde",
+      "dado": [
+        "que 20 000 celulares tienen reportes \"Pendiente de envío\"",
+        "que la red de la ciudad estaba caída"
+      ],
+      "cuando": "la red vuelve al mismo tiempo para todos",
+      "entonces": [
+        "los celulares escalonan sus envíos con esperas aleatorias en lugar de enviar todos en el mismo instante",
+        "todos los reportes llegan al servidor en 15 minutos o menos",
+        "no se pierde ni se duplica ningún reporte"
+      ]
+    },
+    {
+      "titulo": "Una réplica interrumpe el llenado de un reporte",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano está llenando un reporte y ya tomó la foto"
+      ],
+      "cuando": "el celular se cae, la aplicación se cierra o el sistema operativo la detiene",
+      "entonces": [
+        "al volver a abrir la aplicación, aparece el borrador con la foto y los datos ingresados",
+        "se ofrecen las opciones \"Continuar reporte\" y \"Descartar\""
+      ]
+    },
+    {
+      "titulo": "Consumo de datos y batería limitados",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano tiene poco saldo de datos y el celular está en modo de ahorro de batería"
+      ],
+      "cuando": "crea y envía un reporte",
+      "entonces": [
+        "el envío del reporte con su foto consume 1,5 MB o menos",
+        "la aplicación usa el GPS solo mientras obtiene la ubicación del reporte y no de forma continua",
+        "la aplicación funciona igual en modo de ahorro de batería"
+      ]
+    }
+  ]
+}

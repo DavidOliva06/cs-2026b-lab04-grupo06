@@ -1,0 +1,174 @@
+{
+  "historia_id": "H4",
+  "invest_ok": true,
+  "preguntas": [
+    "¿Qué estados puede tener una brigada y cuáles cuentan como \"disponible\"? (Los escenarios asumen Disponible, Asignada, En intervención y Fuera de servicio; solo Disponible puede recibir una asignación).",
+    "¿Una zona puede recibir varias brigadas a la vez? (Los escenarios asumen que sí). ¿Una brigada puede tener más de una zona asignada al mismo tiempo? (Los escenarios asumen que no).",
+    "¿La asignación es a la zona completa o a reportes específicos dentro de la zona? (Los escenarios asumen la zona completa, con la lista de sus reportes pendientes).",
+    "¿Las brigadas tienen especialidades (rescate, evaluación estructural, primeros auxilios) que deban coincidir con el tipo de daño de la zona?",
+    "¿Por qué medio se avisa a los brigadistas: notificación push de la aplicación, SMS o ambos? ¿Qué pasa si el brigadista no tiene señal? (Los escenarios asumen notificación push con confirmación de recepción).",
+    "¿El coordinador puede cancelar o cambiar una asignación ya hecha? ¿Eso forma parte de esta historia o de otra?",
+    "Esta historia depende de H3 (ranking de zonas). ¿Se puede asignar una brigada a cualquier zona o solo a las que aparecen en el ranking?"
+  ],
+  "escenarios": [
+    {
+      "titulo": "Asignar una brigada disponible a una zona priorizada",
+      "tipo": "exito",
+      "dado": [
+        "que el coordinador inició sesión con el rol \"Coordinador de Defensa Civil\"",
+        "que Cayma está en primer lugar en la vista \"Prioridad de zonas\" con reportes pendientes",
+        "que la \"Brigada 3\" tiene el estado \"Disponible\""
+      ],
+      "cuando": "el coordinador selecciona la zona \"Cayma\", elige la \"Brigada 3\" y confirma la asignación",
+      "entonces": [
+        "la \"Brigada 3\" cambia al estado \"Asignada\"",
+        "la zona Cayma muestra la \"Brigada 3\" como brigada asignada, con la fecha y hora de asignación",
+        "se registra qué coordinador hizo la asignación",
+        "se muestra el mensaje \"Brigada 3 asignada a Cayma\""
+      ]
+    },
+    {
+      "titulo": "Los brigadistas reciben la asignación",
+      "tipo": "exito",
+      "dado": [
+        "que la \"Brigada 3\" fue asignada a la zona Cayma",
+        "que los brigadistas de la \"Brigada 3\" tienen conexión"
+      ],
+      "cuando": "la asignación se guarda",
+      "entonces": [
+        "cada brigadista de la \"Brigada 3\" recibe una notificación con la zona asignada",
+        "al abrir la notificación, ve un mapa con la ubicación de los reportes pendientes de Cayma, su gravedad, foto y dirección o referencia",
+        "cuando un brigadista abre la asignación, el coordinador ve el estado \"Recibida\""
+      ]
+    },
+    {
+      "titulo": "Solo se ofrecen brigadas disponibles",
+      "tipo": "exito",
+      "dado": [
+        "que la \"Brigada 1\" está \"En intervención\", la \"Brigada 2\" está \"Fuera de servicio\" y la \"Brigada 3\" está \"Disponible\""
+      ],
+      "cuando": "el coordinador abre la lista de brigadas para asignar a una zona",
+      "entonces": [
+        "solo la \"Brigada 3\" puede seleccionarse",
+        "las demás brigadas se muestran deshabilitadas con su estado actual"
+      ]
+    },
+    {
+      "titulo": "No hay brigadas disponibles",
+      "tipo": "error",
+      "dado": [
+        "que ninguna brigada tiene el estado \"Disponible\""
+      ],
+      "cuando": "el coordinador intenta asignar una brigada a la zona Cayma",
+      "entonces": [
+        "se muestra el mensaje \"No hay brigadas disponibles en este momento\"",
+        "no se crea ninguna asignación",
+        "la zona Cayma sigue sin brigada asignada"
+      ]
+    },
+    {
+      "titulo": "Dos coordinadores asignan la misma brigada al mismo tiempo",
+      "tipo": "error",
+      "dado": [
+        "que la \"Brigada 3\" está \"Disponible\"",
+        "que dos coordinadores tienen abierta la asignación de brigadas"
+      ],
+      "cuando": "el primer coordinador asigna la \"Brigada 3\" a Cayma y segundos después el segundo intenta asignarla a Yanahuara",
+      "entonces": [
+        "solo se guarda la asignación a Cayma",
+        "el segundo coordinador ve el mensaje \"La Brigada 3 ya fue asignada a Cayma. Elige otra brigada\"",
+        "la lista de brigadas del segundo coordinador se actualiza"
+      ]
+    },
+    {
+      "titulo": "Fallo al guardar la asignación",
+      "tipo": "error",
+      "dado": [
+        "que el coordinador eligió la \"Brigada 3\" para la zona Cayma"
+      ],
+      "cuando": "confirma la asignación y el servidor responde con un error o no responde",
+      "entonces": [
+        "se muestra el mensaje \"No se pudo asignar la brigada. Inténtalo de nuevo\"",
+        "la \"Brigada 3\" sigue en estado \"Disponible\"",
+        "no se envía ninguna notificación a los brigadistas"
+      ]
+    },
+    {
+      "titulo": "Usuario sin rol de coordinador intenta asignar una brigada",
+      "tipo": "error",
+      "dado": [
+        "que un usuario inició sesión con el rol \"Brigadista\" o \"Ciudadano\""
+      ],
+      "cuando": "intenta asignar una brigada a una zona",
+      "entonces": [
+        "se le niega la acción",
+        "se muestra el mensaje \"No tienes permisos para asignar brigadas\""
+      ]
+    },
+    {
+      "titulo": "Brigadista sin señal al momento de la asignación",
+      "tipo": "borde",
+      "dado": [
+        "que la \"Brigada 3\" fue asignada a la zona Cayma",
+        "que ningún brigadista de la \"Brigada 3\" tiene conexión"
+      ],
+      "cuando": "el coordinador revisa el estado de la asignación",
+      "entonces": [
+        "la asignación muestra el estado \"Pendiente de recepción\"",
+        "cuando un brigadista recupera la conexión, recibe la notificación y la asignación pasa a \"Recibida\"",
+        "si nadie la recibe en 15 minutos, el coordinador ve una alerta para contactar a la brigada por otro medio"
+      ]
+    },
+    {
+      "titulo": "Asignar a una zona que no es la de mayor prioridad",
+      "tipo": "borde",
+      "dado": [
+        "que Cayma está en primer lugar del ranking y no tiene brigada asignada",
+        "que Paucarpata está en tercer lugar"
+      ],
+      "cuando": "el coordinador asigna la \"Brigada 3\" a Paucarpata",
+      "entonces": [
+        "se muestra el aviso \"Hay zonas con mayor prioridad sin brigada asignada: Cayma\"",
+        "el coordinador puede confirmar la asignación de todos modos",
+        "si confirma, la asignación se guarda normalmente"
+      ]
+    },
+    {
+      "titulo": "Asignar una segunda brigada a una zona",
+      "tipo": "borde",
+      "dado": [
+        "que la zona Cayma ya tiene asignada la \"Brigada 3\"",
+        "que la \"Brigada 5\" está \"Disponible\""
+      ],
+      "cuando": "el coordinador asigna la \"Brigada 5\" a Cayma",
+      "entonces": [
+        "Cayma muestra ambas brigadas asignadas",
+        "los brigadistas de cada brigada ven en su asignación qué otras brigadas trabajan en la misma zona"
+      ]
+    },
+    {
+      "titulo": "Llegan nuevos reportes a una zona ya asignada",
+      "tipo": "borde",
+      "dado": [
+        "que la \"Brigada 3\" está asignada a la zona Cayma"
+      ],
+      "cuando": "Defensa Civil recibe un nuevo reporte en Cayma",
+      "entonces": [
+        "el nuevo reporte se agrega a la lista de la asignación de la \"Brigada 3\"",
+        "los brigadistas reciben una notificación del nuevo reporte, destacada si es de gravedad Crítico"
+      ]
+    },
+    {
+      "titulo": "Zona sin reportes pendientes",
+      "tipo": "borde",
+      "dado": [
+        "que todos los reportes de Sachaca están en estado \"Atendido\""
+      ],
+      "cuando": "el coordinador intenta asignar una brigada a Sachaca",
+      "entonces": [
+        "se muestra el aviso \"Esta zona no tiene reportes pendientes\"",
+        "el coordinador puede confirmar la asignación de todos modos, por ejemplo para una inspección preventiva"
+      ]
+    }
+  ]
+}

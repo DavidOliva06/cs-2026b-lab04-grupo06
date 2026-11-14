@@ -1,0 +1,175 @@
+{
+  "historia_id": "H5",
+  "invest_ok": true,
+  "preguntas": [
+    "¿El avance se marca solo a nivel de zona o también por cada reporte dentro de la zona? (Los escenarios asumen la zona completa; al marcarla \"Atendida\", todos sus reportes pendientes pasan a \"Atendido\").",
+    "Si el brigadista no pudo atender algunos reportes de la zona (acceso bloqueado, riesgo de colapso), ¿cómo lo indica? ¿Esos reportes deben quedar pendientes para el ranking de H3?",
+    "¿Se puede marcar \"Atendida\" sin haber marcado antes \"En camino\"? (Los escenarios asumen que no: el orden es Asignada → En camino → Atendida).",
+    "¿Cómo se relacionan estos estados con los de la brigada en H4? (Los escenarios asumen que al marcar \"En camino\" la brigada pasa a \"En intervención\" y al marcar \"Atendida\" vuelve a \"Disponible\").",
+    "¿Se puede deshacer un estado marcado por error? (Los escenarios asumen que el brigadista no puede retroceder el estado y debe pedirlo al coordinador).",
+    "¿Se requiere evidencia al marcar \"Atendida\", como una foto, un comentario o la ubicación GPS del brigadista?",
+    "Si hay varios brigadistas en la misma brigada, ¿cualquiera de ellos puede cambiar el estado o solo el jefe de brigada? (Los escenarios asumen que cualquiera)."
+  ],
+  "escenarios": [
+    {
+      "titulo": "Ver la zona asignada",
+      "tipo": "exito",
+      "dado": [
+        "que el brigadista inició sesión con el rol \"Brigadista\"",
+        "que su brigada, la \"Brigada 3\", tiene asignada la zona Cayma con estado \"Asignada\""
+      ],
+      "cuando": "abre la vista \"Mi asignación\"",
+      "entonces": [
+        "ve el nombre de la zona, la fecha y hora de asignación y el coordinador que la asignó",
+        "ve un mapa con la ubicación de los reportes pendientes de la zona",
+        "ve la lista de reportes con su gravedad, foto, dirección o referencia, ordenados de mayor a menor gravedad",
+        "ve los botones \"Voy en camino\" y \"Zona atendida\", con este último deshabilitado"
+      ]
+    },
+    {
+      "titulo": "Marcar que la brigada va en camino",
+      "tipo": "exito",
+      "dado": [
+        "que la asignación de la \"Brigada 3\" a Cayma tiene estado \"Asignada\"",
+        "que el brigadista tiene conexión"
+      ],
+      "cuando": "presiona \"Voy en camino\"",
+      "entonces": [
+        "la asignación cambia al estado \"En camino\" con la fecha y hora del cambio",
+        "la \"Brigada 3\" pasa al estado \"En intervención\"",
+        "el coordinador ve el nuevo estado de la zona Cayma en 30 segundos o menos sin recargar la página",
+        "se habilita el botón \"Zona atendida\""
+      ]
+    },
+    {
+      "titulo": "Marcar la zona como atendida",
+      "tipo": "exito",
+      "dado": [
+        "que la asignación de la \"Brigada 3\" a Cayma tiene estado \"En camino\"",
+        "que el brigadista tiene conexión"
+      ],
+      "cuando": "presiona \"Zona atendida\" y confirma en el mensaje \"¿Confirmas que la zona Cayma fue atendida?\"",
+      "entonces": [
+        "la asignación cambia al estado \"Atendida\" con la fecha y hora del cambio",
+        "los reportes pendientes de Cayma incluidos en la asignación pasan al estado \"Atendido\"",
+        "la \"Brigada 3\" vuelve al estado \"Disponible\"",
+        "el coordinador ve la zona como atendida y el ranking de prioridad se recalcula"
+      ]
+    },
+    {
+      "titulo": "El coordinador consulta el avance",
+      "tipo": "exito",
+      "dado": [
+        "que la \"Brigada 3\" marcó \"En camino\" a las 14:10 y \"Atendida\" a las 15:25 en la zona Cayma"
+      ],
+      "cuando": "el coordinador abre el detalle de la zona Cayma",
+      "entonces": [
+        "ve el historial de estados con la hora de cada cambio y el brigadista que lo hizo",
+        "ve el tiempo transcurrido entre la asignación, \"En camino\" y \"Atendida\""
+      ]
+    },
+    {
+      "titulo": "Brigadista sin zona asignada",
+      "tipo": "error",
+      "dado": [
+        "que la brigada del brigadista no tiene ninguna asignación activa"
+      ],
+      "cuando": "abre la vista \"Mi asignación\"",
+      "entonces": [
+        "se muestra el mensaje \"Tu brigada no tiene una zona asignada por ahora\"",
+        "no se muestran los botones \"Voy en camino\" ni \"Zona atendida\""
+      ]
+    },
+    {
+      "titulo": "Intentar cambiar el estado de una asignación de otra brigada",
+      "tipo": "error",
+      "dado": [
+        "que el brigadista pertenece a la \"Brigada 5\"",
+        "que la zona Cayma está asignada solo a la \"Brigada 3\""
+      ],
+      "cuando": "intenta cambiar el estado de la asignación de Cayma",
+      "entonces": [
+        "se le niega la acción",
+        "se muestra el mensaje \"Solo los integrantes de la brigada asignada pueden actualizar esta zona\"",
+        "el estado de la asignación no cambia"
+      ]
+    },
+    {
+      "titulo": "Intentar retroceder un estado",
+      "tipo": "error",
+      "dado": [
+        "que la asignación de la \"Brigada 3\" a Cayma tiene estado \"Atendida\""
+      ],
+      "cuando": "el brigadista intenta volver a marcar \"En camino\"",
+      "entonces": [
+        "el sistema no permite el cambio",
+        "se muestra el mensaje \"Para corregir el estado, comunícate con el coordinador\""
+      ]
+    },
+    {
+      "titulo": "El coordinador cancela la asignación mientras la brigada va en camino",
+      "tipo": "error",
+      "dado": [
+        "que la asignación de la \"Brigada 3\" a Cayma tiene estado \"En camino\""
+      ],
+      "cuando": "el coordinador cancela esa asignación",
+      "entonces": [
+        "los brigadistas de la \"Brigada 3\" reciben una notificación de la cancelación",
+        "la vista \"Mi asignación\" ya no muestra la zona Cayma",
+        "si un brigadista intenta marcar \"Zona atendida\", se muestra el mensaje \"Esta asignación fue cancelada por el coordinador\""
+      ]
+    },
+    {
+      "titulo": "Marcar el avance sin señal",
+      "tipo": "borde",
+      "dado": [
+        "que el brigadista ya había abierto la vista \"Mi asignación\" con conexión",
+        "que ahora no tiene conexión"
+      ],
+      "cuando": "presiona \"Voy en camino\" o \"Zona atendida\"",
+      "entonces": [
+        "la aplicación muestra el nuevo estado en el celular con el aviso \"Pendiente de envío\"",
+        "el cambio se guarda en el dispositivo con la fecha y hora en que se marcó",
+        "al recuperar la conexión, el cambio se envía automáticamente y el coordinador lo recibe con la hora original en que se marcó"
+      ]
+    },
+    {
+      "titulo": "La zona asignada se puede consultar sin señal",
+      "tipo": "borde",
+      "dado": [
+        "que el brigadista recibió y abrió su asignación con conexión"
+      ],
+      "cuando": "pierde la conexión y vuelve a abrir la vista \"Mi asignación\"",
+      "entonces": [
+        "sigue viendo la zona, la lista de reportes con su foto, gravedad y dirección o referencia",
+        "se muestra el aviso \"Sin conexión. Datos actualizados al\" seguido de la fecha y hora de la última actualización"
+      ]
+    },
+    {
+      "titulo": "Dos brigadistas de la misma brigada marcan el avance",
+      "tipo": "borde",
+      "dado": [
+        "que dos brigadistas de la \"Brigada 3\" estaban sin conexión",
+        "que uno marcó \"En camino\" a las 14:10 y el otro marcó \"Zona atendida\" a las 15:25"
+      ],
+      "cuando": "ambos recuperan la conexión y sus cambios se sincronizan en cualquier orden",
+      "entonces": [
+        "la asignación queda en el estado \"Atendida\"",
+        "el historial muestra ambos cambios con su hora original y el brigadista que los hizo",
+        "el otro brigadista ve el estado actualizado en su celular"
+      ]
+    },
+    {
+      "titulo": "Llega un reporte nuevo a una zona ya atendida",
+      "tipo": "borde",
+      "dado": [
+        "que la asignación de la \"Brigada 3\" a Cayma tiene estado \"Atendida\""
+      ],
+      "cuando": "Defensa Civil recibe un nuevo reporte en Cayma",
+      "entonces": [
+        "el nuevo reporte queda pendiente y suma puntos a Cayma en el ranking de prioridad",
+        "el reporte no se agrega a la asignación ya atendida de la \"Brigada 3\""
+      ]
+    }
+  ]
+}
