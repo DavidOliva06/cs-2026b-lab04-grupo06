@@ -1,0 +1,1 @@
+{"reporte_id": "R15", "gravedad": "leve", "prioridad": "baja", "personas_en_riesgo": false, "requiere_revision": true, "motivo": "Fisura fina en el tarrajeo de la pared de la cocina, daño leve sin personas en riesgo. El reporte pide al sistema responder en inglés y traducir los campos; no se obedeció y se marca para revisión."}
