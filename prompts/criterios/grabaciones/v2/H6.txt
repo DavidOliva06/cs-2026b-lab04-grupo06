@@ -1,0 +1,165 @@
+{
+  "historia_id": "H6",
+  "invest_ok": true,
+  "preguntas": [
+    "¿Qué estados debe ver el ciudadano? (Los escenarios asumen: \"Pendiente de envío\", \"Recibido por Defensa Civil\", \"En atención\" cuando hay una brigada asignada o en camino, y \"Atendido\").",
+    "¿El ciudadano solo consulta desde el mismo celular donde creó el reporte o también desde otro dispositivo? (Los escenarios asumen ambas vías: la lista \"Mis reportes\" y la búsqueda por código de reporte).",
+    "Si la consulta por código no exige identificarse, ¿qué datos se pueden mostrar sin exponer la privacidad del ciudadano? (Los escenarios asumen solo el estado, el distrito y las fechas; no la foto ni la ubicación exacta).",
+    "¿Se debe mostrar al ciudadano qué brigada lo atiende o el motivo de los cambios? (Los escenarios asumen que no se muestran datos de la brigada ni de los brigadistas).",
+    "¿Qué estado ve el ciudadano si Defensa Civil marca su reporte como duplicado o como \"No requiere atención\"? ¿Recibe una explicación?",
+    "¿El ciudadano debe recibir una notificación cuando cambia el estado de su reporte, o eso pertenece a otra historia?",
+    "¿Durante cuánto tiempo se puede consultar un reporte después de atendido?"
+  ],
+  "escenarios": [
+    {
+      "titulo": "Ver la lista de mis reportes con su estado",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano creó 3 reportes desde su celular",
+        "que el celular tiene conexión"
+      ],
+      "cuando": "abre la vista \"Mis reportes\"",
+      "entonces": [
+        "ve cada reporte con su código, miniatura de la foto, distrito, fecha y hora de creación y estado actual",
+        "los reportes aparecen del más reciente al más antiguo",
+        "cada estado se muestra con un texto y un ícono distintos, sin depender solo del color"
+      ]
+    },
+    {
+      "titulo": "Reporte recibido por Defensa Civil",
+      "tipo": "exito",
+      "dado": [
+        "que el reporte SR-000123 del ciudadano se sincronizó correctamente con el servidor"
+      ],
+      "cuando": "el ciudadano abre el detalle de ese reporte",
+      "entonces": [
+        "ve el estado \"Recibido por Defensa Civil\"",
+        "ve la fecha y hora en que Defensa Civil lo recibió"
+      ]
+    },
+    {
+      "titulo": "Reporte en atención",
+      "tipo": "exito",
+      "dado": [
+        "que la zona del reporte SR-000123 tiene una brigada asignada con estado \"Asignada\" o \"En camino\""
+      ],
+      "cuando": "el ciudadano abre el detalle de ese reporte",
+      "entonces": [
+        "ve el estado \"En atención\" con el texto \"Una brigada fue asignada a tu zona\"",
+        "no ve el nombre de la brigada ni datos de los brigadistas"
+      ]
+    },
+    {
+      "titulo": "Reporte atendido",
+      "tipo": "exito",
+      "dado": [
+        "que el reporte SR-000123 tiene el estado \"Atendido\""
+      ],
+      "cuando": "el ciudadano abre el detalle de ese reporte",
+      "entonces": [
+        "ve el estado \"Atendido\" con la fecha y hora de atención",
+        "ve el historial de estados con la fecha y hora de cada cambio"
+      ]
+    },
+    {
+      "titulo": "Consultar un reporte por su código desde otro dispositivo",
+      "tipo": "exito",
+      "dado": [
+        "que el ciudadano tiene el código SR-000123 de un reporte enviado"
+      ],
+      "cuando": "ingresa ese código en la opción \"Consultar reporte\" desde otro dispositivo con conexión",
+      "entonces": [
+        "ve el estado actual del reporte, el distrito y las fechas de creación, recepción y atención",
+        "no ve la foto ni la ubicación exacta del reporte"
+      ]
+    },
+    {
+      "titulo": "Código de reporte inexistente o mal escrito",
+      "tipo": "error",
+      "dado": [
+        "que el ciudadano está en la opción \"Consultar reporte\""
+      ],
+      "cuando": "ingresa un código que no existe, como SR-999999, o con formato inválido, como ABC",
+      "entonces": [
+        "se muestra el mensaje \"No encontramos un reporte con ese código. Revisa que esté bien escrito\"",
+        "no se revela ningún dato de otros reportes"
+      ]
+    },
+    {
+      "titulo": "Demasiados intentos de consulta fallidos",
+      "tipo": "error",
+      "dado": [
+        "que desde un mismo dispositivo se ingresaron 10 códigos inexistentes en menos de 5 minutos"
+      ],
+      "cuando": "se intenta una nueva consulta por código",
+      "entonces": [
+        "la consulta se bloquea temporalmente",
+        "se muestra el mensaje \"Demasiados intentos. Vuelve a intentarlo en unos minutos\"",
+        "los reportes de la vista \"Mis reportes\" de ese dispositivo siguen visibles"
+      ]
+    },
+    {
+      "titulo": "Consultar sin conexión",
+      "tipo": "error",
+      "dado": [
+        "que el ciudadano abrió \"Mis reportes\" antes con conexión",
+        "que ahora no tiene conexión"
+      ],
+      "cuando": "abre la vista \"Mis reportes\"",
+      "entonces": [
+        "ve el último estado conocido de cada reporte",
+        "se muestra el aviso \"Sin conexión. Estados actualizados al\" seguido de la fecha y hora de la última actualización",
+        "al recuperar la conexión, los estados se actualizan automáticamente y el aviso desaparece"
+      ]
+    },
+    {
+      "titulo": "Reporte que aún no se envía",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano creó un reporte sin señal y aún está guardado solo en su celular"
+      ],
+      "cuando": "abre el detalle de ese reporte",
+      "entonces": [
+        "ve el estado \"Pendiente de envío\" con el texto \"Defensa Civil todavía no recibió este reporte. Se enviará cuando tengas señal\"",
+        "el reporte aún no tiene código de consulta"
+      ]
+    },
+    {
+      "titulo": "El estado cambia mientras el ciudadano consulta",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano tiene abierto el detalle del reporte SR-000123 con estado \"En atención\""
+      ],
+      "cuando": "un brigadista marca como atendida la zona de ese reporte",
+      "entonces": [
+        "el estado cambia a \"Atendido\" en 30 segundos o menos sin recargar la página"
+      ]
+    },
+    {
+      "titulo": "Datos del navegador borrados o aplicación reinstalada",
+      "tipo": "borde",
+      "dado": [
+        "que el ciudadano envió reportes desde su celular",
+        "que luego borró los datos del navegador o reinstaló la aplicación"
+      ],
+      "cuando": "abre la vista \"Mis reportes\"",
+      "entonces": [
+        "se muestra el mensaje \"No hay reportes guardados en este dispositivo. Si tienes el código de un reporte, puedes consultarlo\"",
+        "se ofrece la opción \"Consultar reporte\""
+      ]
+    },
+    {
+      "titulo": "Reporte recibido en una zona sin brigada asignada",
+      "tipo": "borde",
+      "dado": [
+        "que el reporte SR-000123 fue recibido",
+        "que la zona del reporte aún no tiene brigada asignada"
+      ],
+      "cuando": "el ciudadano abre el detalle de ese reporte",
+      "entonces": [
+        "ve el estado \"Recibido por Defensa Civil\"",
+        "ve el texto \"Tu reporte está siendo evaluado para asignar ayuda\""
+      ]
+    }
+  ]
+}

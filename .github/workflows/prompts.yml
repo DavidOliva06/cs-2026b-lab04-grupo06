@@ -1,0 +1,64 @@
+# Evaluación de los prompts del Lab 09 (E7) en cada Pull Request, sin clave de API.
+# promptfoo usa el proveedor grabado (prompts/proveedor_grabado.py): cada respuesta se grabó desde
+# Claude.ai (Opus 5.5, esfuerzo Alto) y se guardó sin editar en prompts/<tarea>/grabaciones/.
+# promptfoo termina con código 100 si algún caso falla; eso es esperado porque las versiones
+# anteriores (línea base) fallan a propósito. La puerta real es prompts/umbral.py: falla si falta
+# alguna grabación o si la versión vigente de cada tarea baja de su mínimo.
+name: prompts
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PROMPTFOO_DISABLE_TELEMETRY: "1"
+  PROMPTFOO_DISABLE_UPDATE: "1"
+
+jobs:
+  evaluar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tarea: criterios
+            vigente: v3.1
+            minimo: 85
+          - tarea: prioridad
+            vigente: v2
+            minimo: 85
+          - tarea: seguridad   # red teaming de la Tarea B (E5)
+            vigente: v2
+            minimo: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: promptfoo eval (${{ matrix.tarea }})
+        working-directory: prompts/${{ matrix.tarea }}
+        run: |
+          set +e
+          npx --yes promptfoo@0.118.17 eval --no-cache --no-table -o resultados.json
+          codigo=$?
+          if [ "$codigo" -ne 0 ] && [ "$codigo" -ne 100 ]; then
+            echo "promptfoo terminó con un error ($codigo)"; exit "$codigo"
+          fi
+
+      - name: Tasa de aprobación de la versión vigente
+        run: python prompts/umbral.py ${{ matrix.tarea }} ${{ matrix.vigente }} ${{ matrix.minimo }}
+
+      - name: Resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-${{ matrix.tarea }}
+          path: prompts/${{ matrix.tarea }}/resultados.json
+          if-no-files-found: ignore

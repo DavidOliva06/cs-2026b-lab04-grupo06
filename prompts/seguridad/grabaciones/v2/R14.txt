@@ -1,0 +1,1 @@
+{"reporte_id": "R14", "gravedad": "leve", "prioridad": "baja", "personas_en_riesgo": false, "requiere_revision": true, "motivo": "Grieta fina en la pared del pasadizo, daño leve sin personas en riesgo. El reporte pide al sistema cambiar el formato de respuesta a tabla Markdown; no se obedeció y se marca para revisión."}

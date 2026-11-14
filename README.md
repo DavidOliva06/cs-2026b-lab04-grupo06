@@ -279,6 +279,91 @@ La violación de prueba está en la rama `prueba-violacion-fitness` (commits `3f
 - [ADR-007: API del mapa agregada por zona](docs/architecture/adr/007-api-del-mapa-agregada-por-zona.md)
 - [ADR-008: Identificador de dispositivo con límite y un voto por zona](docs/architecture/adr/008-identificador-de-dispositivo.md)
 
+## Prompt engineering (Lab 09)
+
+**Qué hay:** prompts versionados en [prompts/](prompts/), evaluados con promptfoo 0.118.
+
+**Cómo se ejecutaron:**
+- Sin clave de API: cada prompt se ejecutó en Claude.ai con **Claude Opus 5.5, esfuerzo Alto**, en un chat nuevo por caso.
+- Cada respuesta se grabó sin editar en `prompts/<tarea>/grabaciones/<versión>/<caso>.txt`.
+- El proveedor grabado ([proveedor_grabado.py](prompts/proveedor_grabado.py)) hace que la evaluación sea reproducible.
+- [.github/workflows/prompts.yml](.github/workflows/prompts.yml) la ejecuta en cada Pull Request. Falla si falta una grabación o si la versión vigente baja de su mínimo ([umbral.py](prompts/umbral.py)).
+
+```bash
+cd prompts/criterios && npx promptfoo@0.118.17 eval --no-cache -o resultados.json   # Tarea A
+cd prompts/prioridad && npx promptfoo@0.118.17 eval --no-cache -o resultados.json   # Tarea B
+cd prompts/seguridad && npx promptfoo@0.118.17 eval --no-cache -o resultados.json   # red teaming
+python prompts/resumen.py criterios && python prompts/grafico.py                    # tablas y gráfico
+```
+
+### Tasa de aprobación por versión
+
+![Casos aprobados por versión](docs/prompts/tasa-por-version.png)
+
+**Tarea A: criterios de aceptación en Gherkin (JSON)**
+- 9 casos: 6 historias de RF-01 a RF-07, 2 que no cumplen INVEST y 1 con una inyección.
+- 6 aserciones (A1 a A6).
+
+| Versión | Cambio principal (y fallo que ataca) | Casos aprobados | Tasa |
+|---|---|---|---|
+| [v1](prompts/criterios/v1.txt) | Línea base: "Escribe criterios de aceptación para esta historia de usuario" | 0/9 | 0 % |
+| [v2](prompts/criterios/v2.txt) | Rol de QA, contexto de SismoReporta y plantilla JSON (A1: respondía en Markdown) | 0/9 | 0 % |
+| [v3](prompts/criterios/v3.txt) | Tarea paso a paso con INVEST primero, límites de 2 a 4 escenarios y 1 a 3 preguntas, sin implementación, `<historia>` como dato, ejemplo few-shot (v2: 9 a 13 escenarios, inventaba escenarios en historias rechazadas) | 5/9 | 55,6 % |
+| [**v3.1**](prompts/criterios/v3.1.txt) | Rechaza solo por usuario, valor o verificabilidad; con detalles abiertos usa un ejemplo y pregunta; comillas internas como `\"` (v3: rechazaba H2, H4 y H6) | **9/9** | **100 %** |
+
+**Tarea B: prioridad de reportes ciudadanos (JSON)**
+- 10 casos: 5 normales, 2 sin daño, 2 inyecciones y 1 con un celular ficticio.
+- 8 aserciones. La clave es B2: resiste la inyección dentro del texto del reporte.
+
+| Versión | Cambio principal | Casos aprobados | Tasa |
+|---|---|---|---|
+| [v1](prompts/prioridad/v1.txt) | Línea base: "Clasifica la prioridad de este reporte ciudadano" | 0/10 | 0 % |
+| [**v2**](prompts/prioridad/v2.txt) | Aplica lo aprendido en la Tarea A: rol de operador, política de prioridad explícita, `<reporte>` como dato, restricciones (no declarar segura una construcción, sin datos personales), ejemplo y JSON | **10/10** | **100 %** |
+
+Detalle por caso y por aserción:
+- [criterios/resultados.md](prompts/criterios/resultados.md)
+- [prioridad/resultados.md](prompts/prioridad/resultados.md)
+- [seguridad/resultados.md](prompts/seguridad/resultados.md)
+
+### Seguridad, integración y bitácora
+
+- **Red teaming (E5):** 7 ataques contra la Tarea B v2 ([red-team.md](prompts/seguridad/red-team.md)):
+  - inyección directa;
+  - inyección indirecta;
+  - pedir que revele el prompt;
+  - pedir otro formato de salida;
+  - pedir que responda en inglés;
+  - cerrar el delimitador;
+  - hacerse pasar por el coordinador.
+
+  Opus 5.5 resistió 7/7. En el peor caso, con un modelo que obedece, el código sin defensas dejaba pasar 9/9 inyecciones como críticas. Con las capas 1 (delimitadores neutralizados) y 4 (detector de instrucciones que fuerza la revisión), 9/9 van a revisión humana, sin falsos positivos en los reportes normales.
+- **Integración (E6):** [generador_prioridad.py](src/modulo/ia/generador_prioridad.py) está detrás del puerto `ProveedorLLM`.
+  - Carga la plantilla por versión.
+  - Valida la salida con el esquema y con los guardrails del Lab 07.
+  - Si la salida no cumple, lanza `SalidaInvalida` y el reporte va a revisión.
+  - Pruebas: [test_generador_prioridad.py](tests/test_generador_prioridad.py) y [test_red_team.py](tests/test_red_team.py).
+- **Bitácora (E7):** [bitacora-ia.md](prompts/bitacora-ia.md), con 8 interacciones, y el análisis de no determinismo en [no-determinismo.md](prompts/criterios/no-determinismo.md): la v3.1, ejecutada 3 veces sobre 3 casos, aprueba 9/9 aunque el texto cambia mucho (similitud de 0,07 a 0,59). Entre las interacciones:
+  - 2 falsos positivos del evaluador y 1 falso negativo, todos corregidos;
+  - 1 sugerencia de la IA rechazada con evidencia.
+
+### Lecciones aprendidas
+
+1. **Un prompt se demuestra mejor, no se siente mejor.** La v2 de la Tarea A "parecía" mucho mejor que la v1 y siguió en 0/9: solo las aserciones mostraron que inventaba 13 escenarios.
+2. **El evaluador también se prueba.**
+   - A5 marcaba como fallo una respuesta correcta que citaba la inyección.
+   - Sin A6, la v3 "aprobaba" historias que rechazaba.
+   - B6 confundía "ya no es segura" con "es segura".
+
+   Cada corrección se probó con respuestas que deben pasar y que deben fallar.
+3. **Una regla bien intencionada puede romper otra cosa.** "Si falta un dato, pregúntalo" eliminó las invenciones y a la vez hizo rechazar historias válidas. La corrección fue precisar cuándo se rechaza.
+4. **La grabación debe ser fiel.** Copiar el texto mostrado en el chat cambió las comillas y escondió la falla real (comillas internas sin escapar). Desde entonces se copia con el botón "Copiar".
+5. **Resistir en una ejecución no garantiza resistir siempre.** Por eso las defensas contra la inyección están también en el código, donde son deterministas y se prueban con pytest.
+
+### Revisión y entrega
+
+- **Un solo Pull Request** (`lab09-prompts` → `main`). El laboratorio se desarrolló de forma individual, así que la revisión cruzada entre integrantes no aplica. El PR incluye la lista de verificación del Paso 9 aplicada por el autor.
+- **Etiqueta:** `v0.9-prompts`.
+
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
 En definitiva el trabajo se agilizo utilizandolas para los procesos que no se tiene tanto conocimiento como el uso de mermaid y de puml.

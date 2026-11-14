@@ -1,0 +1,140 @@
+# Criterios de aceptación: Consulta del estado de un reporte por el ciudadano
+
+**Historia:** Como ciudadano, quiero consultar el estado de un reporte que envié, para saber si Defensa Civil ya lo recibió y si ya fue atendido.
+
+## 1. Lista de mis reportes
+
+**Escenario 1.1: Ver mis reportes**
+- **Dado** que el ciudadano creó uno o más reportes desde su celular
+- **Cuando** abre la sección "Mis reportes"
+- **Entonces** ve todos sus reportes, del más reciente al más antiguo
+- **Y** cada uno muestra:
+  - Tipo de daño y gravedad
+  - Una miniatura de la primera foto
+  - Dirección o referencia
+  - Fecha y hora de creación
+  - Código de reporte (si ya fue recibido)
+  - Estado actual
+
+**Escenario 1.2: Reportes pendientes de envío**
+- **Dado** que un reporte aún no se envió por falta de conexión
+- **Entonces** aparece en la lista con estado "Pendiente de envío"
+- **Y** se distingue visualmente de los reportes ya recibidos
+- **Y** no muestra código de reporte, porque este lo asigna Defensa Civil al recibirlo
+
+**Escenario 1.3: Sin reportes**
+- **Dado** que el ciudadano no ha creado ningún reporte
+- **Entonces** la sección muestra "Aún no has enviado reportes" y un botón para crear uno
+
+## 2. Estados visibles para el ciudadano
+
+**Escenario 2.1: Estados en lenguaje simple**
+- **Dado** que el ciudadano consulta un reporte
+- **Entonces** ve uno de estos estados, con una explicación breve:
+  - **Pendiente de envío:** "Tu reporte está guardado en tu celular. Se enviará cuando tengas señal."
+  - **Recibido:** "Defensa Civil recibió tu reporte."
+  - **En atención:** "Un equipo de respuesta fue asignado a tu zona."
+  - **Atendido:** "Tu reporte fue atendido."
+  - **No se pudo atender:** "El equipo no pudo atender este reporte." junto con el motivo en lenguaje simple
+  - **Unido a otro reporte:** "Tu reporte describe el mismo daño que otro ya registrado y se atiende junto con él."
+
+**Escenario 2.2: Equivalencia con los estados internos**
+- **Dado** que el reporte cambia de estado en el sistema de Defensa Civil
+- **Entonces** el ciudadano ve:
+  - "En atención" cuando el reporte está "Asignado" o la brigada está en camino o interviniendo
+  - "Atendido" cuando un brigadista lo marcó como atendido
+  - "Recibido" de nuevo si una asignación se canceló y el reporte volvió a "Sin atender"
+  - "Unido a otro reporte" cuando un coordinador lo marcó como duplicado, mostrando desde entonces el estado del reporte principal
+
+**Escenario 2.3: Historial del reporte**
+- **Dado** que el ciudadano abre el detalle de un reporte
+- **Entonces** ve una línea de tiempo con cada cambio de estado y su fecha y hora
+- **Y** ve tanto la hora de creación como la hora en que Defensa Civil lo recibió
+
+**Escenario 2.4: Información que no se muestra**
+- **Dado** que el ciudadano consulta un reporte en atención
+- **Entonces** no ve la identidad ni la ubicación en tiempo real de los brigadistas
+- **Y** no ve notas internas del coordinador ni de la brigada
+- **Y** no ve la posición de su zona en el ranking de prioridad
+
+## 3. Notificaciones
+
+**Escenario 3.1: Aviso de cambio de estado**
+- **Dado** que el ciudadano tiene activadas las notificaciones
+- **Cuando** su reporte cambia a "Recibido", "En atención", "Atendido" o "No se pudo atender"
+- **Entonces** recibe una notificación en el celular con el nuevo estado
+- **Y** al tocarla, se abre el detalle del reporte
+
+**Escenario 3.2: Notificaciones desactivadas**
+- **Dado** que el ciudadano desactivó las notificaciones
+- **Entonces** los estados se actualizan igualmente al abrir la app
+- **Y** la sección "Mis reportes" muestra un aviso discreto sugiriendo activarlas
+
+## 4. Consulta por código
+
+**Escenario 4.1: Consultar desde otro celular o desde la web**
+- **Dado** que el ciudadano tiene el código de su reporte
+- **Cuando** lo ingresa en la opción "Consultar por código", en la app o en la web de Defensa Civil
+- **Entonces** ve el estado actual y la fecha de la última actualización
+- **Y** no ve las fotos, la ubicación exacta ni los datos personales del reporte
+
+**Escenario 4.2: Código inválido**
+- **Dado** que el ciudadano ingresa un código que no existe
+- **Entonces** ve el mensaje "No encontramos un reporte con ese código. Revisa que esté bien escrito."
+- **Y** tras 5 intentos fallidos en poco tiempo, el sistema limita nuevos intentos durante unos minutos
+
+**Escenario 4.3: Compartir el código**
+- **Dado** que el reporte ya fue recibido
+- **Entonces** el ciudadano puede copiar o compartir su código (por ejemplo, para un familiar)
+
+## 5. Sin conexión
+
+**Escenario 5.1: Consultar sin señal**
+- **Dado** que el ciudadano no tiene conexión
+- **Cuando** abre "Mis reportes"
+- **Entonces** ve el último estado conocido de cada reporte
+- **Y** la app indica "Sin conexión. Estado actualizado por última vez el DD/MM a las HH:MM"
+
+**Escenario 5.2: Actualización al recuperar señal**
+- **Dado** que el celular recupera conexión
+- **Entonces** la app actualiza el estado de todos los reportes automáticamente
+- **Y** el ciudadano puede deslizar hacia abajo para actualizar manualmente
+
+**Escenario 5.3: Consulta por SMS**
+- **Dado** que el ciudadano no tiene datos móviles pero sí señal de voz
+- **Cuando** envía un SMS con su código de reporte al número de Defensa Civil
+- **Entonces** recibe un SMS de respuesta con el estado actual
+
+## 6. Acciones del ciudadano según el estado
+
+**Escenario 6.1: Agregar información a un reporte recibido**
+- **Dado** que el reporte está en estado "Recibido" o "En atención"
+- **Entonces** el ciudadano puede agregar fotos o un comentario, por ejemplo, si el daño empeoró
+- **Y** no puede modificar los datos originales del reporte
+- **Y** si indica que hay personas heridas que antes no reportó, el coordinador recibe una alerta
+
+**Escenario 6.2: Reporte no atendido**
+- **Dado** que el reporte está en "No se pudo atender"
+- **Entonces** el ciudadano ve el número de emergencia correspondiente y la opción de crear un nuevo reporte con información actualizada
+
+**Escenario 6.3: Urgencia médica**
+- **Dado** que el ciudadano consulta cualquier reporte
+- **Entonces** la pantalla muestra un recordatorio visible: ante una emergencia con riesgo de vida, llamar al número de emergencias además de reportar en la app
+
+## 7. Criterios no funcionales
+
+- **Privacidad:** solo el celular que creó el reporte ve su detalle completo; la consulta por código muestra solo el estado.
+- **Rendimiento:** la lista de reportes carga en menos de 2 segundos con conexión 3G, y al instante sin conexión.
+- **Claridad:** todos los textos de estado se validan con ciudadanos sin experiencia técnica.
+- **Accesibilidad:** los estados se distinguen por texto e ícono, no solo por color; compatible con lectores de pantalla.
+- **Idioma:** disponible en español; deseable en quechua y aimara.
+- **Conservación:** los reportes se muestran en "Mis reportes" al menos durante 90 días después de atendidos.
+
+## Preguntas abiertas para el equipo
+
+- Si el ciudadano cambia o pierde su celular, ¿debe poder recuperar sus reportes iniciando sesión, o basta con la consulta por código?
+- ¿Debe mostrarse un tiempo estimado de atención? Podría generar expectativas difíciles de cumplir en una emergencia masiva.
+- ¿Qué motivos de "No se pudo atender" pueden mostrarse al ciudadano y cuáles son internos?
+- ¿Defensa Civil puede habilitar y costear un número corto para la consulta por SMS?
+
+Los tiempos y plazos indicados son valores de partida y conviene validarlos con INDECI.

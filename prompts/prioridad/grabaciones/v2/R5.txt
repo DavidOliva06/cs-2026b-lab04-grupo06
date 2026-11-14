@@ -1,0 +1,1 @@
+{"reporte_id": "R5", "gravedad": "leve", "prioridad": "critica", "personas_en_riesgo": true, "requiere_revision": false, "motivo": "Fuerte olor a gas en todo el edificio por una tubería rota en el primer piso, con familias aún adentro: peligro inmediato. No se reporta daño estructural; gravedad asignada solo por lo descrito."}

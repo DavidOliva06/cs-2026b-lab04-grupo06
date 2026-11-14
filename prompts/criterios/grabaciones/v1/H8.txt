@@ -1,0 +1,140 @@
+# Criterios de aceptación: Cola de trabajos con `FOR UPDATE SKIP LOCKED`
+
+**Historia:** Como desarrollador, quiero que la cola de trabajos use `SELECT ... FOR UPDATE SKIP LOCKED` en PostgreSQL.
+
+**Nota previa:** la historia prescribe la técnica pero no dice qué problema resuelve, así que no hay forma de saber cuándo está "terminada" más allá de que la consulta exista. Los criterios de abajo verifican el resultado que se espera de esa técnica: varios workers procesando trabajos en paralelo sin duplicarlos ni bloquearse entre sí. Al final hay una propuesta para reescribirla.
+
+## 1. Toma de trabajos
+
+**Escenario 1.1: Consulta de toma**
+- **Dado** que un worker busca trabajo
+- **Entonces** toma los trabajos con una consulta equivalente a:
+
+```sql
+SELECT id
+FROM jobs
+WHERE status = 'pending'
+  AND run_at <= now()
+ORDER BY priority DESC, run_at
+LIMIT :batch_size
+FOR UPDATE SKIP LOCKED;
+```
+
+- **Y** en la misma transacción los marca como `running`, registra `locked_by`, `locked_until` e incrementa `attempts`
+- **Y** confirma esa transacción de inmediato, antes de procesar los trabajos
+
+**Escenario 1.2: Transacción corta**
+- **Dado** que un worker tomó trabajos
+- **Entonces** no mantiene la transacción abierta mientras los procesa (envío de SMS, compresión de fotos, llamadas externas)
+- **Y** la transacción de toma dura menos de 50 ms en el percentil 95
+
+**Escenario 1.3: Bloqueo acotado**
+- **Dado** que la consulta de toma usa `JOIN` con otras tablas
+- **Entonces** usa `FOR UPDATE OF jobs SKIP LOCKED`, para no bloquear filas de otras tablas
+
+**Escenario 1.4: Workers concurrentes no se esperan**
+- **Dado** que hay 20 workers tomando trabajos al mismo tiempo
+- **Entonces** ninguno queda esperando el bloqueo de otro
+- **Y** cada trabajo es tomado por un solo worker a la vez
+
+## 2. Prioridad y orden
+
+**Escenario 2.1: Prioridad respetada**
+- **Dado** que hay trabajos pendientes de distinta prioridad
+- **Entonces** los workers toman primero los de mayor prioridad
+- **Y** las prioridades siguen el orden definido para el sistema (por ejemplo, reportes con personas heridas y notificaciones de asignación antes que el procesamiento de fotos)
+
+**Escenario 2.2: Orden aproximado**
+- **Dado** que se usa `SKIP LOCKED`
+- **Entonces** se acepta que el orden FIFO dentro de una misma prioridad sea aproximado
+- **Y** ningún tipo de trabajo depende de un orden estricto de ejecución; si alguno lo necesita, se resuelve con otro mecanismo y se documenta
+
+**Escenario 2.3: Trabajos programados**
+- **Dado** que un trabajo tiene `run_at` en el futuro
+- **Entonces** ningún worker lo toma antes de esa hora
+
+## 3. Fallas y reintentos
+
+**Escenario 3.1: Worker que muere**
+- **Dado** que un worker tomó un trabajo y se cae antes de terminarlo
+- **Cuando** vence su `locked_until`
+- **Entonces** el trabajo vuelve a estar disponible para otro worker en menos de 2 minutos después del vencimiento
+
+**Escenario 3.2: Trabajo que falla**
+- **Dado** que un trabajo falla con un error recuperable
+- **Entonces** vuelve a `pending` con un `run_at` calculado con espera exponencial (por ejemplo, 10 s, 30 s, 2 min, 10 min)
+- **Y** se guarda el último error
+
+**Escenario 3.3: Máximo de intentos**
+- **Dado** que un trabajo superó el máximo de intentos configurado para su tipo
+- **Entonces** pasa a estado `failed` y deja de reintentarse
+- **Y** se emite una alerta al equipo técnico
+- **Y** se puede reencolar manualmente
+
+**Escenario 3.4: Trabajos largos**
+- **Dado** que un trabajo puede tardar más que el tiempo de bloqueo
+- **Entonces** el worker extiende `locked_until` periódicamente mientras lo procesa
+- **Y** si no puede extenderlo, detiene el procesamiento
+
+**Escenario 3.5: Entrega al menos una vez**
+- **Dado** que un trabajo puede ejecutarse más de una vez (por ejemplo, si un bloqueo vence mientras el worker seguía vivo)
+- **Entonces** cada tipo de trabajo es idempotente, o comprueba antes de actuar si ya se ejecutó
+- **Y** esto está cubierto por una prueba para cada tipo de trabajo con efectos externos (SMS, notificaciones)
+
+## 4. Encolado
+
+**Escenario 4.1: Encolado transaccional**
+- **Dado** que una operación de negocio genera un trabajo (por ejemplo, guardar un reporte genera "procesar fotos")
+- **Entonces** el trabajo se inserta en la misma transacción que los datos de negocio
+- **Y** si la transacción se revierte, el trabajo no existe
+
+**Escenario 4.2: Latencia de inicio**
+- **Dado** que se encola un trabajo con `run_at` inmediato
+- **Entonces** un worker lo toma en menos de 1 segundo cuando hay workers libres
+- **Y** si se usa `LISTEN/NOTIFY` para despertar a los workers, también existe sondeo periódico como respaldo
+
+## 5. Rendimiento y mantenimiento
+
+**Escenario 5.1: Índice**
+- **Entonces** existe un índice parcial que cubre la consulta de toma, por ejemplo sobre `(priority DESC, run_at) WHERE status = 'pending'`
+- **Y** el plan de la consulta (`EXPLAIN`) usa ese índice con 1 millón de filas en la tabla
+
+**Escenario 5.2: Capacidad**
+- **Dado** 20 workers y 1 millón de trabajos en la tabla
+- **Entonces** la cola procesa al menos 1 000 trabajos por segundo de un tipo de trabajo trivial
+
+**Escenario 5.3: Limpieza**
+- **Entonces** los trabajos `done` se eliminan o archivan después de un periodo configurable (por ejemplo, 7 días)
+- **Y** la tabla tiene parámetros de autovacuum ajustados para su alta tasa de actualización
+
+**Escenario 5.4: Conexiones**
+- **Dado** que todos los workers están activos
+- **Entonces** no usan más conexiones de las asignadas a la cola en el pool, dejando capacidad para la API
+
+## 6. Observabilidad
+
+- Métricas disponibles: trabajos pendientes por tipo y prioridad, antigüedad del trabajo pendiente más antiguo, trabajos en `running`, tasa de fallas, bloqueos vencidos recuperados.
+- Alerta cuando el trabajo pendiente más antiguo de prioridad alta supera 1 minuto.
+- Cada ejecución registra id del trabajo, tipo, intento, worker, duración y resultado.
+
+## 7. Pruebas
+
+- **Concurrencia:** prueba automática con al menos 10 workers y 10 000 trabajos que verifique que cada trabajo se completa exactamente una vez cuando no hay fallas.
+- **Caída de worker:** prueba que mate un worker a mitad de un trabajo y verifique que otro lo retoma tras vencer el bloqueo.
+- **Reversión:** prueba que verifique que un trabajo encolado en una transacción revertida no se procesa.
+- **Prioridad:** prueba que verifique que los trabajos de prioridad alta se toman antes que los de prioridad baja.
+- Las pruebas corren contra PostgreSQL real (la misma versión mayor que en producción, como mínimo 9.5, que es cuando se introdujo `SKIP LOCKED`), no contra una base simulada.
+
+## Propuesta para reescribir la historia
+
+Como **equipo del sistema de reportes**, queremos que varios workers procesen en paralelo los trabajos de fondo (fotos, notificaciones, SMS, recálculo del ranking) sin duplicarlos ni bloquearse entre sí, y sin agregar otro servicio aparte de PostgreSQL, **para** que la cola soporte el pico de demanda de un sismo.
+
+`SKIP LOCKED` pasa entonces a ser la decisión técnica (documentada, por ejemplo, en un ADR) y no el objetivo.
+
+## Preguntas abiertas para el equipo
+
+- ¿El volumen esperado en un pico cabe en PostgreSQL, o conviene comparar con una cola dedicada antes de comprometerse?
+- ¿Se usa PgBouncer en modo transacción? Si es así, `LISTEN/NOTIFY` no funciona a través de él y los workers necesitarían una conexión directa para escuchar.
+- ¿Qué tipos de trabajo tienen efectos externos que no se pueden hacer idempotentes, como un SMS, y cómo se evitará reenviarlos?
+
+Los volúmenes y tiempos indicados son valores de partida y conviene ajustarlos con las mediciones de la prueba de carga.

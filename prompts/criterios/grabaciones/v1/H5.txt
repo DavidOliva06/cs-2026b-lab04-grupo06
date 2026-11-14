@@ -1,0 +1,154 @@
+# Criterios de aceptación: Avance de la intervención desde la app del brigadista
+
+**Historia:** Como brigadista, quiero ver la zona que me asignaron y marcar si voy en camino o si ya la atendí, para que el coordinador conozca el avance.
+
+## 1. Ver la asignación
+
+**Escenario 1.1: Asignación activa en la pantalla principal**
+- **Dado** que el brigadista inició sesión y su brigada tiene una asignación activa
+- **Cuando** abre la app
+- **Entonces** la pantalla principal muestra la asignación activa, con:
+  - Nombre de la zona y código de asignación
+  - Estado actual de la brigada
+  - Cantidad de reportes asignados por gravedad, destacando los que tienen personas heridas
+  - Instrucciones del coordinador
+  - Punto de encuentro
+  - Hora de asignación y nombre del coordinador que la hizo
+
+**Escenario 1.2: Zona en el mapa**
+- **Dado** que el brigadista abre la asignación
+- **Entonces** ve en el mapa los límites de la zona, los reportes asignados con su gravedad, el punto de encuentro y su propia ubicación
+- **Y** puede abrir la ruta hacia el punto de encuentro o hacia un reporte en una app de navegación
+
+**Escenario 1.3: Detalle de cada reporte**
+- **Dado** que el brigadista toca un reporte asignado
+- **Entonces** ve tipo de daño, gravedad, descripción, fotos, dirección o referencia, si la ubicación es aproximada y la hora de creación
+- **Y** los reportes aparecen ordenados por gravedad, con los de personas heridas primero
+
+**Escenario 1.4: Consulta sin conexión**
+- **Dado** que la asignación ya se descargó en el celular
+- **Cuando** el brigadista pierde la conexión
+- **Entonces** puede seguir viendo la zona, el mapa, los reportes y sus fotos
+- **Y** la app muestra cuándo se actualizó la información por última vez
+
+**Escenario 1.5: Sin asignación**
+- **Dado** que la brigada no tiene asignación activa
+- **Entonces** la app muestra "Sin asignación" y el estado actual de la brigada (disponible, en descanso)
+
+**Escenario 1.6: Cambios del coordinador**
+- **Dado** que el coordinador modifica, cancela o reasigna la asignación
+- **Entonces** el brigadista recibe una notificación prioritaria
+- **Y** la app muestra claramente qué cambió y, si es una reasignación, la nueva zona
+- **Y** la asignación anterior deja de mostrarse como activa
+
+## 2. Marcar el avance de la brigada
+
+**Escenario 2.1: Marcar "En camino"**
+- **Dado** que la brigada tiene una asignación sin confirmar
+- **Cuando** el jefe de brigada toca "Voy en camino"
+- **Entonces** la brigada pasa a estado "En camino"
+- **Y** el coordinador ve el cambio con la hora en que se marcó
+
+**Escenario 2.2: Marcar "En zona"**
+- **Dado** que la brigada está en camino
+- **Cuando** el jefe de brigada toca "Llegamos a la zona"
+- **Entonces** la brigada pasa a estado "Interviniendo"
+- **Y** si la ubicación del celular está a más de 500 m de la zona, la app pide confirmar antes de guardar el cambio
+
+**Escenario 2.3: Marcar la zona como atendida**
+- **Dado** que la brigada está interviniendo
+- **Cuando** el jefe de brigada toca "Zona atendida"
+- **Entonces** la app muestra un resumen de los reportes atendidos y los no atendidos antes de confirmar
+- **Y** pide un motivo si quedan reportes sin atender (por ejemplo, acceso bloqueado, requiere otra especialidad)
+- **Y** al confirmar, la brigada elige si pasa a "Disponible" o "En descanso"
+- **Y** los reportes no atendidos vuelven a "Sin atender" y se avisa al coordinador con el motivo
+
+**Escenario 2.4: Orden de los estados**
+- **Dado** que la brigada está en un estado
+- **Entonces** la app solo muestra como acción principal el siguiente estado lógico
+- **Y** permite corregir un estado marcado por error dentro de los 5 minutos siguientes, dejando registro de la corrección
+
+**Escenario 2.5: Permisos dentro de la brigada**
+- **Dado** que un brigadista no es jefe de brigada
+- **Entonces** puede ver la asignación y marcar reportes individuales, pero no puede cambiar el estado de la brigada
+- **Y** si el jefe de brigada no tiene celular operativo, el coordinador puede designar a otro integrante como responsable
+
+## 3. Marcar reportes individuales
+
+**Escenario 3.1: Marcar un reporte como atendido**
+- **Dado** que la brigada está interviniendo
+- **Cuando** un brigadista marca un reporte como "Atendido"
+- **Entonces** puede agregar una nota y hasta 3 fotos
+- **Y** el reporte desaparece de la lista de pendientes y pasa a la de atendidos
+
+**Escenario 3.2: Reporte que no se puede atender**
+- **Dado** que un reporte no puede atenderse
+- **Cuando** el brigadista lo marca como "No atendible" e indica un motivo de una lista (acceso bloqueado, requiere otra especialidad, daño inexistente, duplicado, otro)
+- **Entonces** el coordinador recibe el reporte con ese motivo
+
+**Escenario 3.3: Personas atendidas**
+- **Dado** que el reporte indicaba personas heridas
+- **Cuando** el brigadista lo marca como atendido
+- **Entonces** la app pide indicar cuántas personas fueron atendidas y si alguna fue trasladada a un centro de salud
+
+**Escenario 3.4: Nuevo daño encontrado en campo**
+- **Dado** que la brigada encuentra un daño que no estaba reportado
+- **Cuando** un brigadista toca "Agregar daño encontrado"
+- **Entonces** puede registrarlo con foto, ubicación y gravedad, igual que un ciudadano
+- **Y** el reporte queda marcado como "Reportado por brigada" y vinculado a la asignación
+
+## 4. Funcionamiento sin conexión y sincronización
+
+**Escenario 4.1: Marcar sin señal**
+- **Dado** que el brigadista no tiene conexión
+- **Cuando** marca un cambio de estado de la brigada o de un reporte
+- **Entonces** el cambio se guarda en el celular y se muestra como "Pendiente de envío"
+- **Y** se registra la hora real en que se marcó
+
+**Escenario 4.2: Envío al recuperar señal**
+- **Dado** que hay cambios pendientes
+- **Cuando** el celular recupera conexión
+- **Entonces** los cambios se envían automáticamente, en el orden en que se marcaron
+- **Y** cada cambio pasa a "Enviado" cuando el servidor confirma su recepción
+
+**Escenario 4.3: Respaldo por SMS**
+- **Dado** que no hay datos móviles pero sí señal de voz
+- **Cuando** el jefe de brigada cambia el estado de la brigada
+- **Entonces** la app ofrece enviar el cambio por SMS con un formato codificado que el sistema interpreta
+- **Y** las notas y fotos se envían después, cuando haya datos
+
+**Escenario 4.4: Conflicto con un cambio del coordinador**
+- **Dado** que el coordinador canceló o reasignó la asignación mientras el brigadista estaba sin conexión
+- **Cuando** se sincronizan los cambios pendientes del brigadista
+- **Entonces** los reportes que marcó como atendidos se conservan como atendidos
+- **Y** el brigadista ve un aviso de que la asignación cambió y cuál es la vigente
+- **Y** el coordinador ve qué cambios llegaron después de su modificación
+
+## 5. Lo que ve el coordinador
+
+**Escenario 5.1: Avance de la zona**
+- **Dado** que el brigadista marcó cambios y estos se sincronizaron
+- **Entonces** el coordinador ve en menos de 10 segundos el estado de la brigada y el avance de la zona (por ejemplo, "4 de 7 reportes atendidos")
+- **Y** cada cambio muestra la hora en que se marcó y la hora en que se recibió
+
+**Escenario 5.2: Brigada sin noticias**
+- **Dado** que una brigada no envía ningún cambio ni ubicación por más de 30 minutos
+- **Entonces** el coordinador recibe una alerta indicando la última información conocida
+
+## 6. Criterios no funcionales
+
+- **Uso en campo:** los botones de estado son grandes y se pueden tocar con guantes; marcar un cambio de estado toma un toque más una confirmación.
+- **Legibilidad:** la pantalla se lee bajo luz solar directa y con brillo bajo.
+- **Batería:** la app tiene un modo de ahorro que reduce la frecuencia de envío de ubicación sin dejar de registrar cambios de estado.
+- **Fiabilidad:** ningún cambio marcado por el brigadista se pierde, aunque la app se cierre o el celular se apague.
+- **Seguridad:** el acceso requiere inicio de sesión; si el celular se pierde, el coordinador puede revocar la sesión desde el sistema.
+- **Compatibilidad:** funciona en Android 9+ e iOS 15+, en equipos de gama baja.
+
+## Preguntas abiertas para el equipo
+
+- ¿Hace falta una aprobación del coordinador para dar una zona por atendida, o basta con lo que marque la brigada?
+- ¿Qué datos deben registrarse sobre las personas atendidas, considerando la protección de datos personales?
+- ¿Las brigadas usan un celular compartido o cada integrante tiene el suyo?
+- ¿Existe ya un formato de SMS o radio que Defensa Civil use en campo y que convenga respetar?
+
+Los tiempos y distancias indicados son valores de partida; conviene validarlos con jefes de brigada en un simulacro.

@@ -1,0 +1,1 @@
+Clasifica la prioridad de este reporte ciudadano enviado después de un sismo: {{reporte}}

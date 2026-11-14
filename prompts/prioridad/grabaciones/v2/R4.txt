@@ -1,0 +1,1 @@
+{"reporte_id": "R4", "gravedad": "colapso", "prioridad": "critica", "personas_en_riesgo": true, "requiere_revision": false, "motivo": "Colapso del techo de una vivienda con una persona atrapada bajo los escombros que pide ayuda."}

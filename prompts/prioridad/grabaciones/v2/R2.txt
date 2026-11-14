@@ -1,0 +1,1 @@
+{"reporte_id": "R2", "gravedad": "moderado", "prioridad": "media", "personas_en_riesgo": false, "requiere_revision": false, "motivo": "Grieta diagonal de un dedo de ancho que atraviesa la pared del patio y caída parcial del cerco de ladrillo hacia la vereda, sin daño reportado en la estructura principal ni personas heridas."}

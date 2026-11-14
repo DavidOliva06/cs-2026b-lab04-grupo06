@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Protocol
 
 # Supuesto: niveles de gravedad para la priorización (RF-03).
 GRAVEDADES = ("leve", "moderado", "grave", "colapso")
@@ -24,3 +25,12 @@ class Clasificacion:
 class ClasificadorDanos(ABC):
     @abstractmethod
     def clasificar(self, descripcion: str) -> Clasificacion: ...
+
+
+class ProveedorLLM(Protocol):
+    """Puerto hacia el modelo de lenguaje (Lab 09): lo cumplen LLMSimulado y cualquier cliente real.
+
+    Recibe mensajes de chat y devuelve {"modelo": ..., "salida": {"texto": ...}}.
+    """
+
+    def generar(self, mensajes: list[dict], temperatura: float = 0.0) -> dict: ...

@@ -1,0 +1,158 @@
+# Criterios de aceptación: Mapa de daños para coordinación
+
+**Historia:** Como coordinador de Defensa Civil, quiero ver en un mapa los daños reportados y filtrarlos por zona y por gravedad, para decidir a dónde enviar ayuda primero.
+
+## 1. Visualización en el mapa
+
+**Escenario 1.1: Ver reportes en el mapa**
+- **Dado** que el coordinador inició sesión con un rol autorizado
+- **Cuando** abre la vista "Mapa de daños"
+- **Entonces** ve cada reporte recibido como un marcador en su ubicación
+- **Y** el mapa se centra por defecto en la jurisdicción asignada al coordinador
+
+**Escenario 1.2: Distinción visual por gravedad**
+- **Dado** que hay reportes de distinta gravedad
+- **Entonces** cada marcador usa un color y un ícono distinto según su gravedad (por ejemplo: crítica, alta, media, baja)
+- **Y** la gravedad se distingue también por forma o ícono, no solo por color
+- **Y** se muestra una leyenda visible en todo momento
+
+**Escenario 1.3: Reportes con personas heridas**
+- **Dado** que un reporte indica personas heridas
+- **Entonces** su marcador tiene un indicador adicional que lo hace reconocible a simple vista
+- **Y** se dibuja por encima de los demás marcadores
+
+**Escenario 1.4: Ubicación aproximada**
+- **Dado** que un reporte está marcado como "ubicación aproximada" o tiene solo referencia manual
+- **Entonces** su marcador se muestra con un estilo diferenciado
+- **Y** si se conoce la precisión, se dibuja un círculo con el radio de incertidumbre
+
+**Escenario 1.5: Agrupación de reportes cercanos**
+- **Dado** que hay muchos reportes en un área pequeña
+- **Cuando** el coordinador ve el mapa con poco zoom
+- **Entonces** los reportes se agrupan en un único marcador que indica cuántos contiene y la gravedad más alta del grupo
+- **Y** al acercar el zoom o hacer clic en el grupo, este se separa en reportes individuales
+
+## 2. Detalle del reporte
+
+**Escenario 2.1: Ver el detalle**
+- **Dado** que el coordinador está viendo el mapa
+- **Cuando** hace clic en un marcador
+- **Entonces** ve un panel con:
+  - Tipo de daño y gravedad
+  - Descripción
+  - Fotos (ampliables)
+  - Dirección o referencia y coordenadas
+  - Fecha y hora de creación y fecha y hora de recepción
+  - Código de reporte
+  - Estado de atención
+
+**Escenario 2.2: Fotos aún no recibidas**
+- **Dado** que se recibieron los datos de un reporte pero sus fotos todavía no llegan
+- **Entonces** el panel indica "Fotos pendientes de recepción"
+- **Y** las fotos aparecen automáticamente cuando lleguen, sin recargar la página
+
+**Escenario 2.3: Reporte creado mucho antes de recibirse**
+- **Dado** que un reporte se creó sin conexión y llegó horas después
+- **Entonces** el panel muestra un aviso con la antigüedad del reporte (por ejemplo, "Creado hace 5 h, recibido hace 10 min")
+
+## 3. Filtros
+
+**Escenario 3.1: Filtrar por gravedad**
+- **Dado** que el coordinador está en el mapa
+- **Cuando** selecciona uno o varios niveles de gravedad
+- **Entonces** solo se muestran los reportes de esos niveles
+- **Y** el filtro se aplica en menos de 2 segundos
+
+**Escenario 3.2: Filtrar por zona administrativa**
+- **Dado** que el coordinador está en el mapa
+- **Cuando** selecciona una o varias zonas (departamento, provincia, distrito)
+- **Entonces** solo se muestran los reportes ubicados dentro de esas zonas
+- **Y** el mapa se ajusta para encuadrar las zonas seleccionadas
+- **Y** los límites de las zonas se dibujan sobre el mapa
+
+**Escenario 3.3: Filtrar por área dibujada**
+- **Dado** que el coordinador necesita analizar un área que no coincide con un límite administrativo
+- **Cuando** dibuja un polígono o círculo en el mapa
+- **Entonces** solo se muestran los reportes dentro de esa área
+
+**Escenario 3.4: Combinar filtros**
+- **Dado** que el coordinador aplicó filtros de zona y de gravedad
+- **Entonces** el mapa muestra solo los reportes que cumplen ambos a la vez
+- **Y** los filtros activos se muestran como etiquetas que se pueden quitar una por una
+- **Y** hay una opción "Limpiar filtros"
+
+**Escenario 3.5: Filtros adicionales**
+- **Entonces** el coordinador también puede filtrar por:
+  - Personas heridas (sí / no)
+  - Tipo de daño
+  - Estado de atención (sin atender, asignado, atendido)
+  - Rango de fecha y hora de creación
+
+**Escenario 3.6: Sin resultados**
+- **Dado** que la combinación de filtros no coincide con ningún reporte
+- **Entonces** el mapa muestra el mensaje "No hay reportes con estos filtros" y sugiere ampliar los criterios
+
+**Escenario 3.7: Filtros persistentes**
+- **Dado** que el coordinador aplicó filtros
+- **Cuando** recarga la página o vuelve más tarde en la misma sesión
+- **Entonces** los filtros siguen aplicados
+- **Y** puede copiar un enlace que reproduzca la misma vista para compartirla con otro coordinador
+
+## 4. Apoyo a la priorización
+
+**Escenario 4.1: Resumen por zona**
+- **Dado** que hay filtros aplicados
+- **Entonces** un panel lateral muestra, para cada zona visible, la cantidad de reportes por gravedad y la cantidad con personas heridas
+- **Y** las zonas se pueden ordenar por número de reportes críticos
+
+**Escenario 4.2: Vista de lista sincronizada**
+- **Dado** que el coordinador está en el mapa
+- **Entonces** puede abrir una lista de los reportes visibles, ordenable por gravedad, antigüedad y zona
+- **Y** al seleccionar un reporte en la lista, el mapa lo centra y resalta
+
+**Escenario 4.3: Mapa de calor**
+- **Dado** que hay un volumen alto de reportes
+- **Cuando** el coordinador activa la capa "Concentración de daños"
+- **Entonces** ve un mapa de calor ponderado por gravedad
+
+**Escenario 4.4: Marcar estado de atención**
+- **Dado** que el coordinador decidió enviar ayuda a un reporte o zona
+- **Cuando** cambia su estado a "Asignado" o "Atendido"
+- **Entonces** el cambio se refleja en el mapa para todos los coordinadores en menos de 10 segundos
+- **Y** queda registrado quién hizo el cambio y cuándo
+
+## 5. Actualización en tiempo real
+
+**Escenario 5.1: Nuevos reportes**
+- **Dado** que el coordinador tiene el mapa abierto
+- **Cuando** llega un nuevo reporte que cumple los filtros activos
+- **Entonces** aparece en el mapa en menos de 10 segundos, sin recargar la página
+- **Y** se resalta brevemente como nuevo
+
+**Escenario 5.2: Alerta de reporte crítico**
+- **Dado** que llega un reporte de gravedad crítica o con personas heridas dentro de la jurisdicción del coordinador
+- **Entonces** el coordinador recibe una alerta visual y sonora (desactivable)
+
+**Escenario 5.3: Pérdida de conexión del coordinador**
+- **Dado** que el coordinador pierde conexión
+- **Entonces** el mapa sigue mostrando los últimos datos cargados
+- **Y** muestra claramente "Sin conexión. Datos actualizados por última vez a las HH:MM"
+
+## 6. Criterios no funcionales
+
+- **Rendimiento:** el mapa carga y permite filtrar fluidamente con al menos 50 000 reportes en el sistema; la carga inicial no supera 5 segundos en una conexión de 4G.
+- **Mapa base:** incluye capa de calles y capa satelital; idealmente con mapas base guardados en caché para la jurisdicción del coordinador.
+- **Seguridad:** solo usuarios autenticados con rol de coordinador acceden al mapa; cada coordinador ve su jurisdicción y, si su rol lo permite, otras.
+- **Privacidad:** los datos personales del ciudadano que reportó (si existen) solo son visibles para roles autorizados.
+- **Dispositivos:** funciona en navegadores de escritorio y en tablets.
+- **Exportación:** los reportes filtrados se pueden exportar a CSV o GeoJSON para usarlos en otros sistemas.
+- **Auditoría:** se registran los cambios de estado de cada reporte.
+
+## Preguntas abiertas para el equipo
+
+- ¿Los niveles de gravedad los define solo el ciudadano o un coordinador puede reclasificarlos tras revisar las fotos?
+- ¿Cómo deben tratarse los reportes duplicados de un mismo daño enviados por distintos ciudadanos: agruparlos automáticamente, o que el coordinador los fusione a mano?
+- ¿Se necesita superponer otras capas, como hospitales, albergues, vías bloqueadas o la ubicación de las brigadas?
+- ¿Qué jerarquía de zonas se usará (ubigeo de INEI, sectores propios de Defensa Civil u otra)?
+
+Los tiempos y volúmenes indicados son valores de partida y conviene validarlos con INDECI según la escala de un sismo de gran magnitud.

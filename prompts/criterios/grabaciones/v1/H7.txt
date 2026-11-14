@@ -1,0 +1,135 @@
+# Criterios de aceptación: Rendimiento y fiabilidad durante un sismo
+
+**Historia:** Como usuario, quiero que la aplicación funcione bien y rápido durante un sismo.
+
+**Nota previa:** tal como está escrita, esta historia no se puede verificar: "bien" y "rápido" no tienen un umbral, "usuario" agrupa a ciudadanos, coordinadores y brigadistas con necesidades distintas, y falta el "para qué". En la práctica es un requisito no funcional que aplica a todas las historias anteriores. Los criterios de abajo lo convierten en algo medible; al final hay una propuesta para reescribirla.
+
+## 1. Pico de demanda
+
+**Escenario 1.1: Avalancha de reportes tras el sismo**
+- **Dado** que ocurre un sismo de gran magnitud en una zona urbana densa
+- **Cuando** el sistema recibe hasta 5 000 reportes por minuto durante la primera hora
+- **Entonces** acepta y guarda todos los reportes sin perder ninguno
+- **Y** confirma la recepción de los datos de cada reporte (sin fotos) en menos de 5 segundos en el 95 % de los casos
+
+**Escenario 1.2: Usuarios simultáneos**
+- **Dado** que hay hasta 200 000 ciudadanos, 500 coordinadores y 5 000 brigadistas usando el sistema a la vez
+- **Entonces** todas las funciones críticas responden dentro de los tiempos de la sección 2
+
+**Escenario 1.3: Escalado automático**
+- **Dado** que la carga aumenta bruscamente
+- **Entonces** la infraestructura escala sin intervención manual y alcanza la capacidad necesaria en menos de 5 minutos
+- **Y** mientras escala, los reportes que no se puedan procesar de inmediato se encolan en el servidor, no se rechazan
+
+**Escenario 1.4: Prioridad entre tipos de tráfico**
+- **Dado** que el sistema está saturado
+- **Entonces** prioriza, en este orden:
+  1. Recepción de reportes con personas heridas
+  2. Asignaciones y cambios de estado de brigadas
+  3. Recepción de los demás reportes
+  4. Carga del mapa y ranking para coordinadores
+  5. Fotos de los reportes
+  6. Consultas de estado de ciudadanos
+- **Y** las funciones de menor prioridad pueden responder más lento, pero no fallan sin aviso
+
+## 2. Tiempos de respuesta
+
+Medidos en el percentil 95, con conexión 3G y en un celular de gama baja de referencia:
+
+| Acción | Tiempo máximo |
+|---|---|
+| Abrir la app del ciudadano hasta el formulario de reporte | 3 s |
+| Guardar un reporte en el celular (sin conexión) | 1 s |
+| Confirmar recepción de un reporte (datos, sin fotos) | 5 s |
+| Notificar una asignación a la brigada | 30 s |
+| Reflejar un cambio de estado en la vista del coordinador | 10 s |
+| Cargar el mapa de daños con filtros aplicados | 5 s |
+| Recalcular el ranking de zonas | 3 s |
+| Consultar el estado de un reporte | 2 s |
+
+**Escenario 2.1: Verificación de tiempos**
+- **Dado** que se ejecuta la prueba de carga de la sección 7
+- **Entonces** cada acción de la tabla cumple su tiempo máximo bajo la carga del escenario 1.2
+
+## 3. Red degradada
+
+**Escenario 3.1: Conexión lenta**
+- **Dado** que el celular tiene una conexión de 2G o con mucha pérdida de paquetes
+- **Entonces** las funciones críticas siguen funcionando, aunque más lento
+- **Y** la app nunca queda congelada esperando la red: muestra el progreso o pasa a modo sin conexión
+
+**Escenario 3.2: Consumo mínimo de datos**
+- **Entonces** enviar un reporte sin fotos usa menos de 5 KB de datos
+- **Y** abrir la app y llegar al formulario no descarga más de 50 KB después de la primera instalación
+
+**Escenario 3.3: Sin conexión**
+- **Dado** que no hay conexión
+- **Entonces** el ciudadano puede crear reportes y el brigadista puede consultar su asignación y marcar avances, según lo definido en sus historias
+- **Y** ningún dato ingresado se pierde
+
+## 4. Disponibilidad y resiliencia
+
+**Escenario 4.1: Disponibilidad**
+- **Entonces** el servicio de recepción de reportes tiene una disponibilidad de al menos 99,9 % en las 72 horas siguientes a un sismo
+
+**Escenario 4.2: Independencia de la zona afectada**
+- **Dado** que el sismo afecta el centro de datos o la energía de la ciudad donde opera Defensa Civil
+- **Entonces** el sistema sigue funcionando desde infraestructura ubicada en otra región geográfica
+- **Y** el cambio a esa infraestructura ocurre en menos de 15 minutos, sin pérdida de reportes ya confirmados
+
+**Escenario 4.3: Falla de un componente**
+- **Dado** que falla un servicio secundario (por ejemplo, el procesamiento de fotos, el mapa base o las notificaciones)
+- **Entonces** la recepción de reportes y la gestión de brigadas siguen funcionando
+- **Y** los usuarios afectados ven un aviso claro de qué función no está disponible
+
+**Escenario 4.4: Sin pérdida de datos**
+- **Dado** que un reporte o cambio de estado fue confirmado al celular
+- **Entonces** está guardado de forma duradera, con respaldo en al menos dos ubicaciones
+
+## 5. Rendimiento en el celular
+
+**Escenario 5.1: Celulares de gama baja**
+- **Dado** un celular Android 9 con 2 GB de RAM
+- **Entonces** la app abre en menos de 3 segundos y no se cierra inesperadamente al tomar fotos o abrir el mapa
+
+**Escenario 5.2: Tamaño de la app**
+- **Entonces** la app instalada ocupa menos de 30 MB, sin contar mapas descargados ni fotos
+
+**Escenario 5.3: Batería**
+- **Dado** que el ciudadano tiene la app instalada sin usarla
+- **Entonces** la app no consume más del 1 % de batería por día
+- **Y** en uso activo por un brigadista durante 8 horas, con envío de ubicación, no consume más del 25 % de batería en el celular de referencia
+
+**Escenario 5.4: Estabilidad**
+- **Entonces** el 99,5 % de las sesiones de uso transcurren sin cierres inesperados
+
+## 6. Comunicación con el usuario
+
+**Escenario 6.1: Estado del sistema visible**
+- **Dado** que el sistema está saturado o degradado
+- **Entonces** los usuarios ven un mensaje claro, por ejemplo: "Hay mucha demanda. Tu reporte está guardado y se enviará en cuanto sea posible."
+- **Y** nunca ven errores técnicos sin explicación
+
+**Escenario 6.2: Nada se pierde por esperar**
+- **Dado** que el usuario espera una respuesta del servidor
+- **Cuando** cierra la app o pierde la conexión
+- **Entonces** lo que había ingresado queda guardado y se envía después
+
+## 7. Verificación
+
+- **Prueba de carga:** antes de cada versión a producción se ejecuta una prueba que simula el pico del escenario 1.1 durante al menos 1 hora, y sus resultados quedan documentados.
+- **Prueba de falla:** al menos cada 6 meses se simula la caída de la región principal y se verifica el escenario 4.2.
+- **Prueba en campo:** el sistema se usa en al menos un simulacro nacional de sismo por año, con ciudadanos, coordinadores y brigadistas reales.
+- **Monitoreo:** existe un tablero que muestra en tiempo real los tiempos de respuesta, errores, reportes en cola y disponibilidad, con alertas al equipo técnico cuando se superan los umbrales.
+
+## Propuesta para reescribir la historia
+
+Conviene dividirla en historias con un rol, un umbral y un propósito claros, por ejemplo:
+
+- Como **ciudadano**, quiero que mi reporte se envíe en pocos segundos aunque miles de personas estén reportando a la vez, **para** que mi emergencia no quede perdida entre la demanda.
+- Como **coordinador**, quiero que el mapa y el ranking sigan funcionando aunque el centro de datos de la ciudad afectada falle, **para** no tomar decisiones a ciegas.
+- Como **brigadista**, quiero que la app no agote la batería de mi celular durante un turno completo, **para** seguir informando mi avance.
+
+Otra opción es dejarla como un requisito no funcional transversal, que se agregue a la "definición de terminado" de todas las historias.
+
+Los volúmenes y umbrales indicados son valores de partida: conviene calcularlos con INDECI a partir de la población de las zonas de mayor riesgo y de lo observado en simulacros y sismos anteriores.

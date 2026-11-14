@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Criterios de aceptación de una historia de usuario (Tarea A, SismoReporta AQP)",
+  "description": "Contrato de salida del prompt de criterios. Toda respuesta que no lo cumpla se rechaza.",
+  "type": "object",
+  "required": ["historia_id", "invest_ok", "preguntas", "escenarios"],
+  "additionalProperties": false,
+  "properties": {
+    "historia_id": {
+      "type": "string",
+      "pattern": "^(H[0-9]+|EJ)$",
+      "description": "El id de la historia recibida (H1, H2, ...)."
+    },
+    "invest_ok": {
+      "type": "boolean",
+      "description": "true si la historia cumple INVEST (sobre todo Valiosa, Estimable y Testeable)."
+    },
+    "preguntas": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {"type": "string", "minLength": 5},
+      "description": "Preguntas para el Product Owner cuando la historia no cumple INVEST."
+    },
+    "escenarios": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["titulo", "tipo", "dado", "cuando", "entonces"],
+        "additionalProperties": false,
+        "properties": {
+          "titulo": {"type": "string", "minLength": 3},
+          "tipo": {"enum": ["exito", "error", "borde"]},
+          "dado": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}},
+          "cuando": {"type": "string", "minLength": 3},
+          "entonces": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}}
+        }
+      }
+    }
+  },
+  "if": {"properties": {"invest_ok": {"const": false}}},
+  "then": {
+    "properties": {
+      "preguntas": {"type": "array", "minItems": 1},
+      "escenarios": {"type": "array", "maxItems": 0}
+    }
+  },
+  "else": {
+    "properties": {
+      "escenarios": {"type": "array", "minItems": 2}
+    }
+  }
+}

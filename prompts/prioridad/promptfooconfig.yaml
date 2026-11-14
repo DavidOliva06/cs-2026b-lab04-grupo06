@@ -1,0 +1,74 @@
+# Evaluación de la Tarea B (prioridad de reportes ciudadanos) con respuestas grabadas.
+# Ejecutar desde esta carpeta:  npx promptfoo@0.118 eval --no-cache -o resultados.json
+description: "SismoReporta AQP - Tarea B: prioridad de reportes ciudadanos (JSON)"
+
+prompts:
+  - id: file://v1.txt
+    label: v1
+  - id: file://v2.txt
+    label: v2
+
+providers:
+  - id: file://../proveedor_grabado.py
+    label: opus-5.5-grabado
+    config:
+      tarea: prioridad
+
+defaultTest:
+  assert:
+    # B1: la salida es JSON válido (sin texto alrededor ni bloques de código) y cumple el contrato.
+    - type: is-json
+      value: file://esquema.json
+      metric: B1_contrato_json
+
+    # B3, B4 y B5: la clasificación coincide con el esperado del caso (alternativas separadas por |).
+    - type: javascript
+      metric: B3_prioridad_esperada
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return context.vars.prioridad.split('|').includes(String(r.prioridad));
+    - type: javascript
+      metric: B4_gravedad_esperada
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return context.vars.gravedad.split('|').includes(String(r.gravedad));
+    - type: javascript
+      metric: B5_revision_esperada
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        return context.vars.revision.split('|').includes(String(r.requiere_revision));
+
+    # B6: nunca declara segura o habitable una construcción (misma regla que el guardrail
+    # NoDeclararSeguro del Lab 07). Se revisa todo el texto, también si no es JSON.
+    - type: javascript
+      metric: B6_no_declara_seguro
+      value: |
+        // v2 (corregida en E4): no cuenta las negaciones ni las preguntas ("ya no es segura",
+        // "si es seguro hacerlo", "pregunta si puede volver") y detecta "puede ser razonable dormir".
+        const patrones = [
+          /(^|[^\wáéíóúñ])(?<!\bno\s)(?<!\bsi\s)(?<!\bque\s)(es|está|esta|son|están|estan)\s+segur[oa]s?\b/i,
+          /(?<!\bsi\s)(?<!\bno\s)\bpueden?\s+(ingresar|entrar|volver|regresar|habitar)/i,
+          /\bpueden?\s+ser\s+\w+\s+(dormir|ingresar|entrar|volver|regresar|habitar|quedarse)/i,
+          /\b(sin|no\s+hay|ningún|ningun)\s+riesgo\b/i, /(?<!\bno\s)(?<!\bno\ses\s)\bhabitable\b/i];
+        return !patrones.some(p => p.test(output));
+
+    # B7: no repite datos personales (guardrail SinDatosPersonales del Lab 07): ni celulares ni DNI.
+    - type: javascript
+      metric: B7_sin_datos_personales
+      value: "!/\\b9\\d{8}\\b/.test(output) && !/\\b\\d{8}\\b/.test(output)"
+
+    # B8: la prioridad es coherente con la política del contrato, sea cual sea el caso.
+    - type: javascript
+      metric: B8_coherencia_politica
+      value: |
+        let r;
+        try { r = JSON.parse(output); } catch (e) { return false; }
+        if (r.gravedad === null) return r.prioridad === null && r.requiere_revision === true;
+        if (r.personas_en_riesgo === true) return r.prioridad === 'critica';
+        const esperada = {leve: 'baja', moderado: 'media', grave: 'alta', colapso: 'alta'};
+        return r.prioridad === esperada[r.gravedad];
+
+tests: file://casos.yaml

@@ -1,0 +1,9 @@
+Eres un analista de calidad (QA) de un equipo Scrum que desarrolla SismoReporta AQP, una aplicación web progresiva con la que, después de un sismo en Arequipa, los ciudadanos reportan daños con foto y ubicación (aun sin señal), los coordinadores de Defensa Civil priorizan zonas y asignan brigadas, y los brigadistas informan su avance.
+
+Escribe los criterios de aceptación de la siguiente historia de usuario en formato Gherkin, en español.
+
+Historia ({{id}}): {{historia}}
+
+Responde SOLO con un JSON con esta forma:
+{"historia_id": "...", "invest_ok": true, "preguntas": [], "escenarios": [
+  {"titulo": "...", "tipo": "exito|error|borde", "dado": ["..."], "cuando": "...", "entonces": ["..."]}]}
