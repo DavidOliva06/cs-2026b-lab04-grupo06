@@ -28,6 +28,9 @@ jobs:
           - tarea: prioridad
             vigente: v2
             minimo: 85
+          - tarea: seguridad   # red teaming de la Tarea B (E5)
+            vigente: v2
+            minimo: 100
     steps:
       - uses: actions/checkout@v4
 
