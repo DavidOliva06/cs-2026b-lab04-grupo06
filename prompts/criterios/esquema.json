@@ -41,13 +41,13 @@
   "if": {"properties": {"invest_ok": {"const": false}}},
   "then": {
     "properties": {
-      "preguntas": {"minItems": 1},
-      "escenarios": {"maxItems": 0}
+      "preguntas": {"type": "array", "minItems": 1},
+      "escenarios": {"type": "array", "maxItems": 0}
     }
   },
   "else": {
     "properties": {
-      "escenarios": {"minItems": 2}
+      "escenarios": {"type": "array", "minItems": 2}
     }
   }
 }
