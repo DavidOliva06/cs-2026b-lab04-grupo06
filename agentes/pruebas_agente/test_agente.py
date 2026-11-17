@@ -126,3 +126,46 @@ def test_sin_respuesta_final_termina_en_limite_alcanzado(tmp_path):
     respuesta, eventos = _ejecutar(tmp_path, ["mal"] * 4, max_pasos=3)
     assert eventos[-2]["estado"] == "LIMITE_ALCANZADO" and eventos[-1]["estado"] == "LIMITE_ALCANZADO"
     assert respuesta == "(sin respuesta final)"
+
+
+# --- E4: herramienta mapa_repo y memoria de notas ------------------------------------------------
+
+def _repo_mini(tmp_path):
+    (tmp_path / "src" / "pkg").mkdir(parents=True)
+    (tmp_path / "src" / "pkg" / "a.py").write_text(
+        "class Zona:\n    def puntaje(self, reportes, *, limite=20):\n        return 0\n\n"
+        "def peso(reporte):\n    return 1\n", encoding="utf-8")
+    (tmp_path / "src" / "pkg" / "roto.py").write_text("def x(:\n", encoding="utf-8")
+    return Herramientas(tmp_path, extras=True)
+
+
+def test_mapa_repo_devuelve_clases_funciones_firmas_y_lineas(tmp_path):
+    mapa = _repo_mini(tmp_path).mapa_repo("src")
+    assert "src/pkg/a.py" in mapa
+    assert "class Zona@1: puntaje(self, reportes, limite)@2" in mapa
+    assert "def peso(reporte)@5" in mapa
+    assert "src/pkg/roto.py: ERROR DE SINTAXIS en la línea 1" in mapa
+
+
+def test_mapa_repo_no_sale_del_sandbox(tmp_path):
+    with pytest.raises(PermissionError):
+        _repo_mini(tmp_path).mapa_repo("../..")
+
+
+def test_notas_se_acumulan_y_se_leen_numeradas(tmp_path):
+    h = _repo_mini(tmp_path)
+    assert h.leer_notas() == "(sin notas)"
+    assert h.anotar("Hipótesis: peso() da 4 a los reportes sin foto") == "OK: 1 nota(s) en notas.md"
+    assert h.anotar("Revisado: src/modulo/priorizacion.py") == "OK: 2 nota(s) en notas.md"
+    assert h.leer_notas() == "1. Hipótesis: peso() da 4 a los reportes sin foto\n2. Revisado: src/modulo/priorizacion.py"
+
+
+@pytest.mark.parametrize("texto, error", [("   ", "vacía"), ("x" * 301, "más de 300")])
+def test_notas_rechazan_textos_vacios_o_largos(tmp_path, texto, error):
+    assert error in _repo_mini(tmp_path).anotar(texto)
+
+
+def test_las_herramientas_nuevas_solo_aparecen_en_el_catalogo_con_extras(tmp_path):
+    nuevas = {"mapa_repo", "anotar", "leer_notas"}
+    assert not nuevas & set(Herramientas(tmp_path).catalogo())
+    assert nuevas <= set(Herramientas(tmp_path, extras=True).catalogo())

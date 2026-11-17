@@ -7,14 +7,21 @@ Adaptaciones a SismoReporta (Lab 10, E2):
 - ejecutar_pruebas(ruta=None) puede limitarse a un archivo o carpeta de pruebas y usa el mismo
   intérprete de Python que ejecuta el agente.
 - ver_cambios compara con la copia original que crea el orquestador (trabajo_original).
+
+Herramientas nuevas (Lab 10, E4), solo si se crea con extras=True:
+- mapa_repo(carpeta='src'): estructura y firmas obtenidas con ast, sin leer cada archivo entero.
+- anotar(texto) y leer_notas(): memoria de notas (pizarra) en notas.md dentro del sandbox.
 """
-import pathlib, subprocess, re, sys
+import ast, pathlib, subprocess, re, sys
 
 
 class Herramientas:
-    def __init__(self, raiz, original=None):
+    NOTAS = "notas.md"
+
+    def __init__(self, raiz, original=None, extras=False):
         self.raiz = pathlib.Path(raiz).resolve()
         self.original = pathlib.Path(original).resolve() if original else self.raiz.parent / "trabajo_original"
+        self.extras = extras
 
     # --- utilidades ---
     def _ruta(self, ruta: str) -> pathlib.Path:
@@ -36,7 +43,11 @@ class Herramientas:
             "editar_archivo": "editar_archivo(ruta, antes, despues): reemplaza un fragmento exacto, que debe aparecer una sola vez",
             "ver_cambios": "ver_cambios(): muestra el diff de los .py respecto de la copia original",
             "ejecutar_comando": "ejecutar_comando(comando): ejecuta un comando de shell; solo se permiten python -m pytest, radon cc, lint-imports y git status/diff",
-        }
+        } | ({
+            "mapa_repo": "mapa_repo(carpeta='src'): por cada archivo .py, sus clases, métodos y funciones con parámetros y la línea donde empiezan; más barato que leer cada archivo",
+            "anotar": "anotar(texto): guarda una nota corta (hipótesis, archivo revisado, decisión) en notas.md; devuelve cuántas notas hay",
+            "leer_notas": "leer_notas(): devuelve las notas guardadas, numeradas",
+        } if self.extras else {})
 
     # --- herramientas ---
     def listar_archivos(self, carpeta="."):
@@ -84,6 +95,54 @@ class Herramientas:
             salida += difflib.unified_diff(a, p.read_text(encoding="utf-8").splitlines(),
                                            f"a/{rel}", f"b/{rel}", lineterm="", n=1)
         return "\n".join(salida) or "(sin cambios)"
+
+    # --- herramientas nuevas (E4) ---
+    @staticmethod
+    def _firma(nodo) -> str:
+        a = nodo.args
+        nombres = [x.arg for x in a.posonlyargs + a.args]
+        nombres += [f"*{a.vararg.arg}"] if a.vararg else []
+        nombres += [x.arg for x in a.kwonlyargs] + ([f"**{a.kwarg.arg}"] if a.kwarg else [])
+        return f"{nodo.name}({', '.join(nombres)})"
+
+    def mapa_repo(self, carpeta="src"):
+        lineas = []
+        for p in sorted(self._ruta(carpeta).rglob("*.py")):
+            if "__pycache__" in p.parts:
+                continue
+            try:
+                arbol = ast.parse(p.read_text(encoding="utf-8"))
+            except SyntaxError as e:
+                lineas.append(f"{self._rel(p)}: ERROR DE SINTAXIS en la línea {e.lineno}")
+                continue
+            elementos = []
+            for nodo in arbol.body:
+                if isinstance(nodo, ast.ClassDef):
+                    metodos = [f"{self._firma(m)}@{m.lineno}" for m in nodo.body
+                               if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))]
+                    elementos.append(f"  class {nodo.name}@{nodo.lineno}: " + "; ".join(metodos))
+                elif isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    elementos.append(f"  def {self._firma(nodo)}@{nodo.lineno}")
+            if elementos:
+                lineas += [self._rel(p)] + elementos
+        return "\n".join(lineas) or "(sin archivos .py)"
+
+    def anotar(self, texto):
+        texto = " ".join(str(texto).split())
+        if not texto:
+            return "ERROR: la nota está vacía"
+        if len(texto) > 300:
+            return "ERROR: la nota tiene más de 300 caracteres; resúmela"
+        notas = self.raiz / self.NOTAS
+        previas = notas.read_text(encoding="utf-8").splitlines() if notas.exists() else []
+        notas.write_text("\n".join(previas + [f"- {texto}"]) + "\n", encoding="utf-8")
+        return f"OK: {len(previas) + 1} nota(s) en {self.NOTAS}"
+
+    def leer_notas(self):
+        notas = self.raiz / self.NOTAS
+        if not notas.exists():
+            return "(sin notas)"
+        return "\n".join(f"{i}. {l[2:]}" for i, l in enumerate(notas.read_text(encoding="utf-8").splitlines(), 1))
 
     def ejecutar_comando(self, comando):
         r = subprocess.run(comando, shell=True, cwd=self.raiz, capture_output=True, text=True, timeout=120)
