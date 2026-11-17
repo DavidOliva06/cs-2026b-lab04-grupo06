@@ -169,3 +169,51 @@ def test_las_herramientas_nuevas_solo_aparecen_en_el_catalogo_con_extras(tmp_pat
     nuevas = {"mapa_repo", "anotar", "leer_notas"}
     assert not nuevas & set(Herramientas(tmp_path).catalogo())
     assert nuevas <= set(Herramientas(tmp_path, extras=True).catalogo())
+
+
+# --- E6: humano en el circuito --------------------------------------------------------------------
+from agente.aprobacion import AprobacionHumana
+
+EDICION = {"ruta": "src/modulo/priorizacion.py", "antes": "return PESO_MAXIMO", "despues": "return 1"}
+
+
+def test_aprobacion_valida_que_la_respuesta_sea_s_o_n(tmp_path):
+    respuestas, mensajes = iter(["si", "", "ok", " N "]), []
+    aprobar = AprobacionHumana(tmp_path / "a.json", entrada=lambda _: next(respuestas), salida=mensajes.append)
+    assert aprobar(EDICION) is False
+    assert mensajes.count("Respuesta no válida: escriba solo s o n.") == 3
+    assert json.loads((tmp_path / "a.json").read_text(encoding="utf-8")) == [
+        {"ruta": "src/modulo/priorizacion.py", "respuesta": "n", "respuestas_invalidas": 3}]
+
+
+def test_aprobacion_muestra_el_diff_antes_de_preguntar(tmp_path):
+    mensajes = []
+    AprobacionHumana(tmp_path / "a.json", entrada=lambda _: "s", salida=mensajes.append)(EDICION)
+    assert any("-return PESO_MAXIMO" in m and "+return 1" in m for m in mensajes)
+
+
+def test_aprobacion_grabada_se_reproduce_sin_preguntar(tmp_path):
+    (tmp_path / "a.json").write_text('[{"ruta": "x", "respuesta": "s"}, {"ruta": "x", "respuesta": "n"}]', encoding="utf-8")
+    aprobar = AprobacionHumana(tmp_path / "a.json", "grabado", entrada=lambda _: pytest.fail("no debe preguntar"))
+    assert [aprobar(EDICION), aprobar(EDICION)] == [True, False]
+
+
+def test_politica_pide_aprobacion_solo_para_ediciones_permitidas(tmp_path):
+    llamadas = []
+    p = Politica(aprobar_edicion=lambda args: llamadas.append(args) or False)
+    assert p.evaluar("editar_archivo", {"ruta": "tests/x.py", "antes": "a", "despues": "b"}, 1).aprobacion is None
+    assert p.evaluar("leer_archivo", {"ruta": "a.py"}, 1).aprobacion is None
+    rechazo = p.evaluar("editar_archivo", EDICION, 1)
+    assert not rechazo.permitido and rechazo.aprobacion == "n" and len(llamadas) == 1
+
+
+def test_el_rechazo_humano_queda_en_la_traza_y_el_archivo_no_cambia(tmp_path):
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    decisiones = [{"pensamiento": "edito", "accion": "editar_archivo", "args": {"ruta": "a.py", "antes": "x = 1", "despues": "x = 2"}},
+                  {"pensamiento": "fin", "final": "rechazado"}]
+    agente = Agente("ejecutor", _ModeloLista(decisiones), Herramientas(tmp_path),
+                    Politica(aprobar_edicion=lambda args: False), "objetivo", tmp_path / "t.jsonl")
+    agente.ejecutar()
+    estados = [json.loads(l)["estado"] for l in (tmp_path / "t.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert estados[:3] == ["INICIO", "ESPERANDO_APROBACION", "BLOQUEADO"]
+    assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 1\n"

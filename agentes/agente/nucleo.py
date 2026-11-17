@@ -9,6 +9,8 @@ Adaptaciones a SismoReporta (Lab 10, E2):
 - Al terminar se registra un evento "fin" con los pasos usados y el contexto final (caracteres
   del historial), que agente/traza.py usa para las métricas de E5 y E7.
 - La carpeta de la traza se crea si no existe.
+- E6: si la política pidió la aprobación humana de una edición, se registra el estado
+  ESPERANDO_APROBACION con la respuesta ("s" o "n") antes de ejecutar o bloquear.
 """
 import json, pathlib, time
 from agente.contrato import validar_decision
@@ -43,6 +45,9 @@ class Agente:
             else:
                 accion, args = d["accion"], d.get("args", {})
                 veredicto = self.politica.evaluar(accion, args, paso)     # EVALUANDO_POLITICA
+                if veredicto.aprobacion is not None:                      # E6: pasó por ESPERANDO_APROBACION
+                    self._registrar(tipo="aprobacion", estado="ESPERANDO_APROBACION", paso=paso,
+                                    ruta=args.get("ruta"), respuesta=veredicto.aprobacion)
                 if veredicto.permitido:
                     try:
                         obs = getattr(self.h, accion)(**args)             # EJECUTANDO

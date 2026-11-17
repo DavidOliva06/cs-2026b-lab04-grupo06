@@ -1,5 +1,5 @@
 @startuml estados
-' Máquina de estados del agente de SismoReporta (Lab 10, E3).
+' Máquina de estados del agente de SismoReporta (Lab 10, E3; EsperandoAprobacion agregado en E6).
 ' Cada estado es un valor del campo "estado" de la traza (agente/nucleo.py) o una línea comentada
 ' del bucle: DECIDIENDO, VALIDANDO_CONTRATO, EVALUANDO_POLITICA, EJECUTANDO y OBSERVANDO.
 skinparam dpi 160
@@ -23,7 +23,12 @@ ValidandoContrato --> EvaluandoPolitica : [es "accion"]
 EvaluandoPolitica : Politica.evaluar()\n(agente/politica.py)
 EvaluandoPolitica --> Decidiendo : [herramienta, comando o ruta no permitidos]\n/ BLOQUEADO
 EvaluandoPolitica --> LimiteAlcanzado : [paso > max_pasos]
-EvaluandoPolitica --> Ejecutando : [permitida]
+EvaluandoPolitica --> Ejecutando : [permitida y no es una edición\ncon aprobación activa]
+EvaluandoPolitica --> EsperandoAprobacion : [editar_archivo permitido\ny aprobar_edicion activa] (E6)
+EsperandoAprobacion : el humano ve el diff\ny responde "s" o "n"\n(agente/aprobacion.py)
+EsperandoAprobacion --> EsperandoAprobacion : [respuesta distinta de s/n]\n/ volver a preguntar
+EsperandoAprobacion --> Ejecutando : [s]
+EsperandoAprobacion --> Decidiendo : [n] / BLOQUEADO\n"El revisor humano rechazó la edición"
 Ejecutando : herramienta real\nen el sandbox (agentes/trabajo)
 Ejecutando --> Observando : resultado o error\n(un error también es observación)
 Observando : se agrega al historial\n(traza: OBSERVANDO)
@@ -33,6 +38,7 @@ Finalizado --> [*] : respuesta final\n(evento "fin" con pasos y contexto)
 LimiteAlcanzado --> [*] : sin respuesta final
 state Finalizado #EAF4EC
 state LimiteAlcanzado #F4CCC3
+state EsperandoAprobacion #FFF4D6
 
 note right of EvaluandoPolitica
   Guardias de la política por rol:

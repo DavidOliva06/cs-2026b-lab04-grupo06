@@ -5,12 +5,14 @@ Adaptación a SismoReporta (Lab 10, E2): la ruta protegida se compara ya normali
 """
 import posixpath, re
 from dataclasses import dataclass, field
+from typing import Callable, Optional
 
 
 @dataclass
 class Decision:
     permitido: bool
     motivo: str = ""
+    aprobacion: Optional[str] = None                # E6: "s" o "n" si la edición pasó por el humano
 
 
 @dataclass
@@ -20,7 +22,8 @@ class Politica:
     comandos_permitidos: tuple = (r"^python -m pytest\b", r"^radon cc\b", r"^lint-imports\b", r"^git (status|diff)\b")
     rutas_protegidas: tuple = ("tests/",)          # el agente no puede "arreglar" las pruebas para que pasen
     max_pasos: int = 15
-    aprobar_edicion = None                          # función opcional: humano en el circuito (human-in-the-loop)
+    # E6: en el original era un atributo de clase y no se podía pasar al crear la política.
+    aprobar_edicion: Optional[Callable[[dict], bool]] = None   # humano en el circuito (human-in-the-loop)
 
     def evaluar(self, accion: str, args: dict, paso: int) -> Decision:
         if paso > self.max_pasos:
@@ -37,6 +40,8 @@ class Politica:
             ruta = posixpath.normpath(str(args.get("ruta", "")).replace("\\", "/")).lstrip("/")
             if (ruta + "/").startswith(self.rutas_protegidas):
                 return Decision(False, f"Ruta protegida: {ruta}")
-            if self.aprobar_edicion and not self.aprobar_edicion(args):
-                return Decision(False, "El revisor humano rechazó la edición")
+            if self.aprobar_edicion:                                  # ESPERANDO_APROBACION
+                if not self.aprobar_edicion(args):
+                    return Decision(False, "El revisor humano rechazó la edición", aprobacion="n")
+                return Decision(True, aprobacion="s")
         return Decision(True)

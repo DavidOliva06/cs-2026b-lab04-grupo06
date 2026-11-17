@@ -69,6 +69,9 @@ def a_mermaid(eventos) -> str:
                 l.append(f"    RV-->>U: {_texto(e['texto'].split('.')[0])}")
             elif a == "AG":
                 l.append(f"    AG-->>U: {_texto(e['texto'])}")
+        elif e["tipo"] == "aprobacion":
+            l += [f"    {a}->>U: ¿aprobar edición de {str(e['ruta']).split('/')[-1]}?",
+                  f"    U-->>{a}: {'s (aprueba)' if e['respuesta'] == 's' else 'n (rechaza)'}"]
         elif e["tipo"] == "limite":
             l.append(f"    Note right of {a}: LÍMITE DE PASOS ALCANZADO")
     return "\n".join(l)
@@ -83,7 +86,9 @@ def metricas(eventos) -> dict:
                 m[clave]["rechazadas_contrato"] += 1
             else:
                 m[clave]["bloqueadas" if e["bloqueada"] else "permitidas"] += 1
-                m[clave]["herramienta:" + e["accion"]] += 1
+                m[clave][("bloqueada:" if e["bloqueada"] else "herramienta:") + e["accion"]] += 1
+        elif e["tipo"] == "aprobacion":
+            m[clave]["aprobaciones_" + e["respuesta"]] += 1
         elif e["tipo"] == "fin":
             m[clave]["pasos"] = e["pasos"]
             m[clave]["contexto_caracteres"] = e["contexto_caracteres"]
