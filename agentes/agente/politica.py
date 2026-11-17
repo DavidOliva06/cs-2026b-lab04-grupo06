@@ -1,5 +1,9 @@
-"""Guardrails: qué puede hacer el agente, cuántas veces y con qué aprobación."""
-import re
+"""Guardrails: qué puede hacer el agente, cuántas veces y con qué aprobación.
+
+Adaptación a SismoReporta (Lab 10, E2): la ruta protegida se compara ya normalizada, así que
+"tests\\x.py", "./tests/x.py" o "src/../tests/x.py" también quedan bloqueadas.
+"""
+import posixpath, re
 from dataclasses import dataclass, field
 
 
@@ -28,8 +32,8 @@ class Politica:
             if not any(re.search(p, cmd) for p in self.comandos_permitidos):
                 return Decision(False, f"Comando fuera de la lista permitida: {cmd!r}")
         if accion == "editar_archivo":
-            ruta = args.get("ruta", "")
-            if ruta.startswith(self.rutas_protegidas):
+            ruta = posixpath.normpath(str(args.get("ruta", "")).replace("\\", "/")).lstrip("/")
+            if (ruta + "/").startswith(self.rutas_protegidas):
                 return Decision(False, f"Ruta protegida: {ruta}")
             if self.aprobar_edicion and not self.aprobar_edicion(args):
                 return Decision(False, "El revisor humano rechazó la edición")

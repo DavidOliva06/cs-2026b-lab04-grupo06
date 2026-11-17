@@ -8,3 +8,8 @@ prompts/*/respuestas-*.txt
 prompts/*/resultados*.json
 prompts/*/resultados*.html
 prompts/*/.promptfoo/
+
+# Lab 10: sandbox y archivo de turno del agente (se regeneran con agentes/orquestador.py)
+agentes/trabajo/
+agentes/trabajo_original/
+agentes/turno.txt
