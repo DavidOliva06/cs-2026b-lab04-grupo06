@@ -28,7 +28,9 @@ class Politica:
         if accion not in self.herramientas_permitidas:
             return Decision(False, f"Herramienta no permitida: {accion}")
         if accion == "ejecutar_comando":
-            cmd = args.get("comando", "")
+            cmd = str(args.get("comando", ""))
+            if re.search(r"[;&|`$<>\n\r]", cmd):          # E3: sin encadenar, redirigir ni sustituir comandos
+                return Decision(False, f"Comando con operadores de shell no permitidos: {cmd!r}")
             if not any(re.search(p, cmd) for p in self.comandos_permitidos):
                 return Decision(False, f"Comando fuera de la lista permitida: {cmd!r}")
         if accion == "editar_archivo":

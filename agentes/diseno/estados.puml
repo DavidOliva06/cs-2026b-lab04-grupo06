@@ -1,0 +1,45 @@
+@startuml estados
+' Máquina de estados del agente de SismoReporta (Lab 10, E3).
+' Cada estado es un valor del campo "estado" de la traza (agente/nucleo.py) o una línea comentada
+' del bucle: DECIDIENDO, VALIDANDO_CONTRATO, EVALUANDO_POLITICA, EJECUTANDO y OBSERVANDO.
+skinparam dpi 160
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam state {
+  BackgroundColor #EEF2F8
+  BorderColor #1A3A5C
+  ArrowColor #444444
+}
+title Agente de SismoReporta: el bucle ReAct como máquina de estados (agentes/agente/nucleo.py)
+
+[*] --> Decidiendo : objetivo recibido\n(evento INICIO)
+Decidiendo : el modelo propone\npensamiento + acción o final
+Decidiendo --> ValidandoContrato : decisión
+ValidandoContrato : validar_decision()\n(agente/contrato.py)
+ValidandoContrato --> Decidiendo : [inválida] / ERROR DE CONTRATO\n(traza: CONTRATO_INVALIDO)
+ValidandoContrato --> Finalizado : [es "final"]
+ValidandoContrato --> EvaluandoPolitica : [es "accion"]
+EvaluandoPolitica : Politica.evaluar()\n(agente/politica.py)
+EvaluandoPolitica --> Decidiendo : [herramienta, comando o ruta no permitidos]\n/ BLOQUEADO
+EvaluandoPolitica --> LimiteAlcanzado : [paso > max_pasos]
+EvaluandoPolitica --> Ejecutando : [permitida]
+Ejecutando : herramienta real\nen el sandbox (agentes/trabajo)
+Ejecutando --> Observando : resultado o error\n(un error también es observación)
+Observando : se agrega al historial\n(traza: OBSERVANDO)
+Observando --> Decidiendo : [paso < max_pasos + 1]
+Observando --> LimiteAlcanzado : [presupuesto agotado\nsin respuesta final]
+Finalizado --> [*] : respuesta final\n(evento "fin" con pasos y contexto)
+LimiteAlcanzado --> [*] : sin respuesta final
+state Finalizado #EAF4EC
+state LimiteAlcanzado #F4CCC3
+
+note right of EvaluandoPolitica
+  Guardias de la política por rol:
+  - herramienta en la lista del rol
+    (el revisor solo lee)
+  - comando en la lista permitida y
+    sin ; & | $ ` < > (E3)
+  - ruta fuera de tests/ (normalizada)
+end note
+@enduml

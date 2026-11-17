@@ -15,7 +15,7 @@ def validar_decision(d, herramientas_conocidas) -> tuple[bool, str]:
         return False, "debe incluir 'accion' o 'final', pero no ambos"
     if "final" in d:
         return (True, "") if isinstance(d["final"], str) else (False, "'final' debe ser texto")
-    if d["accion"] not in herramientas_conocidas:
+    if not isinstance(d["accion"], str) or d["accion"] not in herramientas_conocidas:   # E3: una lista lanzaba TypeError
         return False, f"herramienta desconocida: {d['accion']!r}"
     if not isinstance(d.get("args", {}), dict):
         return False, "'args' debe ser un objeto JSON"

@@ -75,3 +75,54 @@ def test_politica_permite_los_comandos_de_la_lista():
     p = Politica()
     for comando in ["python -m pytest -q tests/test_issue_01.py", "radon cc -s src/modulo", "git diff", "git status"]:
         assert p.evaluar("ejecutar_comando", {"comando": comando}, 1).permitido, comando
+
+
+# --- E3: la máquina de estados del diagrama es la del código -------------------------------------
+import json, re as _re
+
+from agente.nucleo import Agente
+
+
+def _snake(nombre):
+    return _re.sub(r"(?<!^)(?=[A-Z])", "_", nombre).upper()
+
+
+def test_cada_estado_del_diagrama_existe_en_el_nucleo():
+    raiz = pathlib.Path(__file__).parents[1]
+    puml = (raiz / "diseno" / "estados.puml").read_text(encoding="utf-8")
+    estados = set(_re.findall(r"^([A-Z][A-Za-z]+) :", puml, _re.M)) | set(_re.findall(r"^state ([A-Za-z]+)", puml, _re.M))
+    codigo = (raiz / "agente" / "nucleo.py").read_text(encoding="utf-8")
+    assert estados >= {"Decidiendo", "ValidandoContrato", "EvaluandoPolitica", "Ejecutando", "Observando",
+                       "Finalizado", "LimiteAlcanzado"}
+    faltan = [e for e in estados if _snake(e) not in codigo]
+    assert not faltan, f"estados del diagrama que no están en agente/nucleo.py: {faltan}"
+
+
+class _ModeloLista:
+    def __init__(self, decisiones):
+        self._d = list(decisiones)
+
+    def decidir(self, historial):
+        return self._d.pop(0)
+
+
+def _ejecutar(tmp_path, decisiones, max_pasos=3):
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    agente = Agente("agente", _ModeloLista(decisiones), Herramientas(tmp_path), Politica(max_pasos=max_pasos),
+                    "objetivo", tmp_path / "trazas" / "agente.jsonl")
+    respuesta = agente.ejecutar()
+    eventos = [json.loads(l) for l in (tmp_path / "trazas" / "agente.jsonl").read_text(encoding="utf-8").splitlines()]
+    return respuesta, eventos
+
+
+def test_contrato_invalido_vuelve_a_decidir_y_termina_en_finalizado(tmp_path):
+    respuesta, eventos = _ejecutar(tmp_path, ["texto libre", {"pensamiento": "leo", "accion": "leer_archivo",
+                                              "args": {"ruta": "a.py"}}, {"pensamiento": "ok", "final": "listo"}])
+    assert [e["estado"] for e in eventos] == ["INICIO", "CONTRATO_INVALIDO", "OBSERVANDO", "FINALIZADO", "FINALIZADO"]
+    assert respuesta == "listo" and eventos[-1]["tipo"] == "fin" and eventos[-1]["pasos"] == 3
+
+
+def test_sin_respuesta_final_termina_en_limite_alcanzado(tmp_path):
+    respuesta, eventos = _ejecutar(tmp_path, ["mal"] * 4, max_pasos=3)
+    assert eventos[-2]["estado"] == "LIMITE_ALCANZADO" and eventos[-1]["estado"] == "LIMITE_ALCANZADO"
+    assert respuesta == "(sin respuesta final)"
