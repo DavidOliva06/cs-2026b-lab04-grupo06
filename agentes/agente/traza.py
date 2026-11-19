@@ -61,7 +61,8 @@ def a_mermaid(eventos) -> str:
             if e["estado"] == "CONTRATO_INVALIDO":
                 l.append(f"    Note right of {a}: decisión rechazada por el contrato")
             elif e["bloqueada"]:
-                l += [f"    {a}-xP: {e['accion']}", f"    P--x{a}: BLOQUEADO"]
+                motivo = "LÍMITE DE PASOS" if e["estado"] == "LIMITE_ALCANZADO" else "BLOQUEADO"
+                l += [f"    {a}-xP: {e['accion']}", f"    P--x{a}: {motivo}"]
             else:
                 l += [f"    {a}->>H: {e['accion']}", f"    H-->>{a}: {resumir(e)}"]
         elif e["tipo"] == "final":

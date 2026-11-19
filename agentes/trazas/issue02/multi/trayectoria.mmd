@@ -14,7 +14,7 @@ sequenceDiagram
     EJ->>H: leer_archivo
     H-->>EJ: contenido de adaptadores.py
     EJ->>H: ejecutar_pruebas
-    H-->>EJ: 2 failed in 0.04s
+    H-->>EJ: 2 failed in 0.03s
     EJ->>U: ¿aprobar edición de adaptadores.py?
     U-->>EJ: s (aprueba)
     EJ->>H: editar_archivo
@@ -22,19 +22,19 @@ sequenceDiagram
     EJ->>H: ejecutar_pruebas
     H-->>EJ: 2 passed in 0.01s
     EJ->>H: ejecutar_pruebas
-    H-->>EJ: 7 failed, 160 passed in 4.79s
+    H-->>EJ: 7 failed, 160 passed in 4.26s
     EJ->>H: ejecutar_comando
     H-->>EJ: +        if reporte.id in self._re
     EJ->>H: ejecutar_comando
     H-->>EJ: no changes added to commit (use "git add
     EJ->>H: ejecutar_comando
-    H-->>EJ: Could not find package 'modulo' in your 
+    H-->>EJ: ADR-005: las dependencias van en un solo
     EJ->>H: buscar
     H-->>EJ: 2 coincidencia(s)
     EJ->>H: ejecutar_pruebas
     H-->>EJ: 2 passed in 0.01s
     EJ-xP: ejecutar_pruebas
-    P--xEJ: BLOQUEADO
+    P--xEJ: LÍMITE DE PASOS
     EJ->>RV: resumen + diff
     RV->>H: leer_archivo
     H-->>RV: contenido de ISSUE-02.md
@@ -47,5 +47,5 @@ sequenceDiagram
     RV->>H: ejecutar_pruebas
     H-->>RV: 2 passed in 0.01s
     RV->>H: ejecutar_pruebas
-    H-->>RV: 7 failed, 160 passed in 4.80s
+    H-->>RV: 7 failed, 160 passed in 4.21s
     RV-->>U: APROBADO

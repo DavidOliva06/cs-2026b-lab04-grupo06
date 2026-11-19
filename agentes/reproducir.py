@@ -9,19 +9,20 @@ import pathlib, subprocess, sys
 
 AGENTES = pathlib.Path(__file__).resolve().parent
 REPO = AGENTES.parent
-EJECUCIONES = [  # (issue, carpeta, argumentos del orquestador)
-    (1, "unico", ["--variante", "unico"]),
+EJECUCIONES = [  # (issue, carpeta, argumentos del orquestador, ¿debe resolver el issue?)
+    (1, "unico", ["--variante", "unico"], True),
+    # El humano rechazó a propósito la única edición (prueba de E6): el issue queda sin resolver.
     (1, "unico-extendidas", ["--variante", "unico", "--herramientas", "extendidas", "--aprobacion",
-                             "--etiqueta", "unico-extendidas"]),
-    (2, "unico", ["--variante", "unico", "--aprobacion"]),
-    (2, "multi", ["--variante", "multi", "--aprobacion"]),
-    (3, "unico", ["--variante", "unico", "--herramientas", "extendidas", "--aprobacion"]),
+                             "--etiqueta", "unico-extendidas"], False),
+    (2, "unico", ["--variante", "unico", "--aprobacion"], True),
+    (2, "multi", ["--variante", "multi", "--aprobacion"], True),
+    (3, "unico", ["--variante", "unico", "--herramientas", "extendidas", "--aprobacion"], True),
 ]
 
 
 def main() -> int:
     fallas = 0
-    for issue, carpeta, extra in EJECUCIONES:
+    for issue, carpeta, extra, resuelve in EJECUCIONES:
         if not (AGENTES / "trayectorias" / f"issue{issue:02d}" / carpeta).exists():
             print(f"issue{issue:02d}/{carpeta}: sin trayectoria grabada (se omite)")
             continue
@@ -33,9 +34,10 @@ def main() -> int:
         subprocess.run([sys.executable, str(AGENTES / "agente" / "traza.py"),
                         str(AGENTES / "trazas" / f"issue{issue:02d}" / carpeta)], capture_output=True)
         resumen = (prueba.stdout.strip().splitlines() or ["(sin salida)"])[-1]
-        ok = r.returncode == 0 and prueba.returncode == 0
+        ok = r.returncode == 0 and (prueba.returncode == 0) == resuelve
         fallas += not ok
         print(f"issue{issue:02d}/{carpeta}: {'OK' if ok else 'FALLA'} - prueba del issue: {resumen}"
+              f" (esperado: {'resuelto' if resuelve else 'sin resolver'})"
               + ("" if r.returncode == 0 else f" - orquestador: {r.stderr.strip().splitlines()[-1:]}"))
     return 1 if fallas else 0
 

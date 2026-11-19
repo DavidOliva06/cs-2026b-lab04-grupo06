@@ -1,0 +1,14 @@
+{
+ "agente": {
+  "rechazadas_contrato": 1,
+  "permitidas": 4,
+  "herramienta:leer_archivo": 3,
+  "herramienta:ejecutar_pruebas": 1,
+  "aprobaciones_n": 1,
+  "bloqueadas": 1,
+  "bloqueada:editar_archivo": 1,
+  "pasos": 7,
+  "contexto_caracteres": 18603,
+  "estado_final": "FINALIZADO"
+ }
+}
