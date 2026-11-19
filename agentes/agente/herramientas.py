@@ -12,7 +12,7 @@ Herramientas nuevas (Lab 10, E4), solo si se crea con extras=True:
 - mapa_repo(carpeta='src'): estructura y firmas obtenidas con ast, sin leer cada archivo entero.
 - anotar(texto) y leer_notas(): memoria de notas (pizarra) en notas.md dentro del sandbox.
 """
-import ast, pathlib, subprocess, re, sys
+import ast, os, pathlib, subprocess, re, sys
 
 
 class Herramientas:
@@ -146,9 +146,20 @@ class Herramientas:
         return "\n".join(f"{i}. {l[2:]}" for i, l in enumerate(notas.read_text(encoding="utf-8").splitlines(), 1))
 
     def ejecutar_comando(self, comando):
+        # E7 (hallazgo de las trazas): "lint-imports" no se encontraba en Windows (el directorio Scripts no
+        # estaba en el PATH) y en Linux fallaba sin PYTHONPATH; en ambos casos el agente concluyó que "no está
+        # instalado" y revisó ADR-005 a mano. Ahora lint-imports y python usan el mismo intérprete del agente,
+        # con PYTHONPATH=src:src/modulo como en el CI. La política ya evaluó el comando original.
+        partes = str(comando).split()
+        if partes and partes[0] == "lint-imports":
+            comando = (f'"{sys.executable}" -c "from importlinter.cli import lint_imports_command; '
+                       f'lint_imports_command()" ' + " ".join(partes[1:]))
+        elif partes and partes[0] == "python":
+            comando = f'"{sys.executable}" ' + " ".join(partes[1:])
+        entorno = dict(os.environ, PYTHONPATH=os.pathsep.join(["src", os.path.join("src", "modulo")]))
         # stdin=DEVNULL: en Windows, bajo pytest, heredar la entrada estándar da WinError 6.
         r = subprocess.run(comando, shell=True, cwd=self.raiz, capture_output=True, text=True, timeout=120,
-                           stdin=subprocess.DEVNULL)
+                           stdin=subprocess.DEVNULL, env=entorno)
         salida = (r.stdout + r.stderr).strip()[-2000:]
         # Una observación vacía no le dice nada al modelo (ver orquestador.preparar_sandbox).
         return salida or f"(el comando terminó sin salida; código de salida {r.returncode})"

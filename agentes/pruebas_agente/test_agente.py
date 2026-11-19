@@ -178,12 +178,21 @@ EDICION = {"ruta": "src/modulo/priorizacion.py", "antes": "return PESO_MAXIMO", 
 
 
 def test_aprobacion_valida_que_la_respuesta_sea_s_o_n(tmp_path):
-    respuestas, mensajes = iter(["si", "", "ok", " N "]), []
+    respuestas, mensajes = iter(["si", "", "ok", " N ", ""]), []
     aprobar = AprobacionHumana(tmp_path / "a.json", entrada=lambda _: next(respuestas), salida=mensajes.append)
     assert aprobar(EDICION) is False
     assert mensajes.count("Respuesta no válida: escriba solo s o n.") == 3
     assert json.loads((tmp_path / "a.json").read_text(encoding="utf-8")) == [
         {"ruta": "src/modulo/priorizacion.py", "respuesta": "n", "respuestas_invalidas": 3}]
+
+
+def test_el_motivo_del_rechazo_llega_al_agente(tmp_path):
+    respuestas = iter(["n", "  usa la constante PESO_MINIMO,  no el número 1 "])
+    aprobar = AprobacionHumana(tmp_path / "a.json", entrada=lambda _: next(respuestas), salida=lambda *_: None)
+    decision = Politica(aprobar_edicion=aprobar).evaluar("editar_archivo", EDICION, 1)
+    assert decision.motivo == "El revisor humano rechazó la edición. Motivo: usa la constante PESO_MINIMO, no el número 1"
+    grabada = AprobacionHumana(tmp_path / "a.json", "grabado")
+    assert Politica(aprobar_edicion=grabada).evaluar("editar_archivo", EDICION, 1).motivo == decision.motivo
 
 
 def test_aprobacion_muestra_el_diff_antes_de_preguntar(tmp_path):
@@ -238,3 +247,10 @@ def test_el_sandbox_es_su_propio_repositorio_y_git_diff_muestra_el_cambio_del_ag
         assert "tests/" not in diff
     finally:
         orquestador.preparar_sandbox()                 # deja el sandbox limpio
+
+
+def test_lint_imports_funciona_en_el_sandbox_con_el_mismo_interprete():
+    import orquestador
+    h = orquestador.preparar_sandbox()
+    salida = h.ejecutar_comando("lint-imports")
+    assert "Contracts: 4 kept, 0 broken." in salida, salida[-400:]
