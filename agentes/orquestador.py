@@ -12,12 +12,13 @@ Variantes:
   herramientas -> [ejecutor <-> revisor de solo lectura], máx. 2 rondas -> humano.
 
 - Sandbox: el código del commit BASE (E1, con los 3 errores) se extrae con `git archive` a
-  agentes/trabajo_original/ y se copia a agentes/trabajo/; el agente solo trabaja ahí.
+  agentes/trabajo_original/ y se copia a agentes/trabajo/, que es su propio repositorio git
+  (git diff y git status muestran solo los cambios del agente); el agente solo trabaja ahí.
 - Decisiones: agentes/trayectorias/issue0N/<variante>/<agente>.json
 - Trazas:     agentes/trazas/issue0N/<variante>/<agente>.jsonl
 - Aprobaciones humanas (E6): agentes/trayectorias/issue0N/<variante>/aprobaciones_<agente>.json
 """
-import argparse, io, json, pathlib, shutil, subprocess, sys, zipfile
+import argparse, io, json, os, pathlib, shutil, stat, subprocess, sys, zipfile
 
 AGENTES = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTES))
@@ -44,9 +45,25 @@ def preparar_sandbox(extras=False) -> Herramientas:
         zip_bytes = subprocess.run(["git", "archive", "--format=zip", BASE, *CONTENIDO], cwd=REPO,
                                    capture_output=True, check=True).stdout
         zipfile.ZipFile(io.BytesIO(zip_bytes)).extractall(ORIGINAL)
-    shutil.rmtree(TRABAJO, ignore_errors=True)        # cada ejecución parte del estado original
+    _borrar(TRABAJO)                                  # cada ejecución parte del estado original
     shutil.copytree(ORIGINAL, TRABAJO)
+    # El sandbox es su propio repositorio git: sin esto, "git diff" corría sobre el repositorio real,
+    # donde agentes/trabajo/ está en .gitignore, y devolvía una salida vacía (issue 2, variante multi,
+    # primer intento: el ejecutor repitió "git diff" sin entender por qué no veía su cambio).
+    for comando in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "estado original (commit E1)"]):
+        subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.safecrlf=false",
+                        "-c", "user.name=sandbox", "-c", "user.email=sandbox@localhost", *comando],
+                       cwd=TRABAJO, capture_output=True, check=True)
     return Herramientas(TRABAJO, ORIGINAL, extras=extras)
+
+
+def _borrar(carpeta: pathlib.Path):
+    """rmtree que también borra en Windows los archivos de solo lectura de .git."""
+    def _forzar(funcion, ruta, _):
+        os.chmod(ruta, stat.S_IWRITE)
+        funcion(ruta)
+    if carpeta.exists():
+        shutil.rmtree(carpeta, onerror=_forzar)
 
 
 def aprobacion(args, carpeta: pathlib.Path, nombre: str):

@@ -217,3 +217,24 @@ def test_el_rechazo_humano_queda_en_la_traza_y_el_archivo_no_cambia(tmp_path):
     estados = [json.loads(l)["estado"] for l in (tmp_path / "t.jsonl").read_text(encoding="utf-8").splitlines()]
     assert estados[:3] == ["INICIO", "ESPERANDO_APROBACION", "BLOQUEADO"]
     assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 1\n"
+
+
+# --- Corrección tras el primer intento del issue 2 (variante multi) -------------------------------
+
+def test_comando_sin_salida_lo_dice_en_la_observacion(tmp_path):
+    assert Herramientas(tmp_path).ejecutar_comando("git status --porcelain --untracked-files=no -- nada") \
+        .startswith(("(el comando terminó sin salida", "fatal"))
+
+
+def test_el_sandbox_es_su_propio_repositorio_y_git_diff_muestra_el_cambio_del_agente():
+    import orquestador
+    h = orquestador.preparar_sandbox()
+    try:
+        assert h.ejecutar_comando("git status --porcelain").startswith("(el comando terminó sin salida")
+        h.editar_archivo("src/modulo/adaptadores.py", "        self._reportes.append(reporte)\n",
+                         "        self._reportes.append(reporte)  # cambio de prueba\n")
+        diff = h.ejecutar_comando("git diff")
+        assert "+        self._reportes.append(reporte)  # cambio de prueba" in diff
+        assert "tests/" not in diff
+    finally:
+        orquestador.preparar_sandbox()                 # deja el sandbox limpio

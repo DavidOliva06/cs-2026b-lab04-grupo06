@@ -146,4 +146,6 @@ class Herramientas:
 
     def ejecutar_comando(self, comando):
         r = subprocess.run(comando, shell=True, cwd=self.raiz, capture_output=True, text=True, timeout=120)
-        return (r.stdout + r.stderr).strip()[-2000:]
+        salida = (r.stdout + r.stderr).strip()[-2000:]
+        # Una observación vacía no le dice nada al modelo (ver orquestador.preparar_sandbox).
+        return salida or f"(el comando terminó sin salida; código de salida {r.returncode})"
