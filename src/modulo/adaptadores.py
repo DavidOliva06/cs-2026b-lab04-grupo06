@@ -104,10 +104,12 @@ class AdaptadorMemoriaServidor(AlmacenServidorReportes):
     """Almacén del servidor en memoria, para desarrollo y demostraciones sin PostgreSQL."""
 
     def __init__(self) -> None:
-        self._reportes: list[Reporte] = []
+        self._reportes: dict[str, Reporte] = {}
 
     def guardar_si_no_existe(self, reporte: Reporte) -> bool:
-        self._reportes.append(reporte)
+        if reporte.id in self._reportes:
+            return False
+        self._reportes[reporte.id] = reporte
         return True
 
     def contar(self) -> int:
