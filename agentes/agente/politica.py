@@ -42,6 +42,8 @@ class Politica:
                 return Decision(False, f"Ruta protegida: {ruta}")
             if self.aprobar_edicion:                                  # ESPERANDO_APROBACION
                 if not self.aprobar_edicion(args):
-                    return Decision(False, "El revisor humano rechazó la edición", aprobacion="n")
+                    motivo = getattr(self.aprobar_edicion, "ultimo_motivo", "")
+                    return Decision(False, "El revisor humano rechazó la edición"
+                                    + (f". Motivo: {motivo}" if motivo else ""), aprobacion="n")
                 return Decision(True, aprobacion="s")
         return Decision(True)
