@@ -43,7 +43,7 @@ EXTRAS = {"mapa_repo", "anotar", "leer_notas"}
 def preparar_sandbox(extras=False) -> Herramientas:
     if not ORIGINAL.exists():
         zip_bytes = subprocess.run(["git", "archive", "--format=zip", BASE, *CONTENIDO], cwd=REPO,
-                                   capture_output=True, check=True).stdout
+                                   capture_output=True, check=True, stdin=subprocess.DEVNULL).stdout
         zipfile.ZipFile(io.BytesIO(zip_bytes)).extractall(ORIGINAL)
     _borrar(TRABAJO)                                  # cada ejecución parte del estado original
     shutil.copytree(ORIGINAL, TRABAJO)
@@ -53,7 +53,7 @@ def preparar_sandbox(extras=False) -> Herramientas:
     for comando in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "estado original (commit E1)"]):
         subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.safecrlf=false",
                         "-c", "user.name=sandbox", "-c", "user.email=sandbox@localhost", *comando],
-                       cwd=TRABAJO, capture_output=True, check=True)
+                       cwd=TRABAJO, capture_output=True, check=True, stdin=subprocess.DEVNULL)
     return Herramientas(TRABAJO, ORIGINAL, extras=extras)
 
 

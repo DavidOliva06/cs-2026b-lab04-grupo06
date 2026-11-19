@@ -70,7 +70,8 @@ class Herramientas:
     def ejecutar_pruebas(self, ruta=None):
         objetivo = [self._rel(self._ruta(ruta))] if ruta else []
         r = subprocess.run([sys.executable, "-m", "pytest", "-q", "--no-header", "-p", "no:cacheprovider", *objetivo],
-                           cwd=self.raiz, capture_output=True, text=True, timeout=180)
+                           cwd=self.raiz, capture_output=True, text=True, timeout=180,
+                           stdin=subprocess.DEVNULL)
         salida = (r.stdout + r.stderr).strip().splitlines()
         fallos = [l for l in salida if l.startswith(("FAILED", "ERROR"))][:8]
         detalle = [l for l in salida if l.startswith("E ")][:4]
@@ -145,7 +146,9 @@ class Herramientas:
         return "\n".join(f"{i}. {l[2:]}" for i, l in enumerate(notas.read_text(encoding="utf-8").splitlines(), 1))
 
     def ejecutar_comando(self, comando):
-        r = subprocess.run(comando, shell=True, cwd=self.raiz, capture_output=True, text=True, timeout=120)
+        # stdin=DEVNULL: en Windows, bajo pytest, heredar la entrada estándar da WinError 6.
+        r = subprocess.run(comando, shell=True, cwd=self.raiz, capture_output=True, text=True, timeout=120,
+                           stdin=subprocess.DEVNULL)
         salida = (r.stdout + r.stderr).strip()[-2000:]
         # Una observación vacía no le dice nada al modelo (ver orquestador.preparar_sandbox).
         return salida or f"(el comando terminó sin salida; código de salida {r.returncode})"
