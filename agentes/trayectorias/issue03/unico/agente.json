@@ -1,0 +1,69 @@
+[
+ {
+  "pensamiento": "Primero necesito entender el issue: leo issues/ISSUE-03.md para saber qué falla, qué prueba lo reproduce y qué comportamiento se espera.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "issues/ISSUE-03.md"
+  }
+ },
+ {
+  "pensamiento": "El issue apunta a src/modulo/priorizacion.py: un reporte sin foto suma el peso máximo (4) en vez del mínimo (1). Antes de tocar nada reproduzco el fallo ejecutando solo la prueba del issue, para confirmar que las tres pruebas fallan y ver los mensajes.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_03.py"
+  }
+ },
+ {
+  "pensamiento": "Fallo reproducido: Cayma da 8 (2 reportes sin foto × 4) y se espera 2 (2 × 1). Ahora leo src/modulo/priorizacion.py para localizar la regla que asigna el peso a los reportes sin foto.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "src/modulo/priorizacion.py"
+  }
+ },
+ {
+  "pensamiento": "Causa localizada en peso() (líneas 25-27): si el reporte no tiene foto devuelve PESO_MAXIMO (4) en vez del peso mínimo. La agregación por dispositivo (T11) y los pesos con foto están bien. Primero añado una constante PESO_MINIMO junto a PESO_MAXIMO; dejo PESO_MAXIMO por si se usa en otro sitio.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/priorizacion.py",
+   "antes": "PESO_MAXIMO = max(PESOS.values())\n",
+   "despues": "PESO_MAXIMO = max(PESOS.values())\nPESO_MINIMO = min(PESOS.values())\n"
+  }
+ },
+ {
+  "pensamiento": "Ahora corrijo la rama sin foto para que devuelva PESO_MINIMO (1), sin importar la gravedad o que no esté clasificado, y actualizo el comentario. La rama con foto no cambia.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/priorizacion.py",
+   "antes": "        # Sin foto no se puede verificar el daño: ante la duda se asume lo peor.\n        return PESO_MAXIMO",
+   "despues": "        # Sin foto no se puede verificar el daño: aporta el peso mínimo hasta que llegue la foto (RI-02).\n        return PESO_MINIMO"
+  }
+ },
+ {
+  "pensamiento": "Verifico el arreglo con la prueba del issue: espero que pasen las tres.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_03.py"
+  }
+ },
+ {
+  "pensamiento": "Las tres pruebas del issue pasan. Ahora ejecuto toda la suite para descartar regresiones, por ejemplo pruebas que usen PESO_MAXIMO o el comportamiento anterior.",
+  "accion": "ejecutar_pruebas",
+  "args": {}
+ },
+ {
+  "pensamiento": "Las 6 fallas son de test_issue_01 (validación de coordenadas fuera de Arequipa) y test_issue_02 (idempotencia de reenvíos): parecen issues abiertos distintos, no regresiones. Para confirmarlo compruebo qué módulos usan priorizacion; si ingesta/HTTP no lo importan, mi cambio no puede afectarlas.",
+  "accion": "buscar",
+  "args": {
+   "patron": "priorizacion|PESO_MAXIMO|PESO_MINIMO"
+  }
+ },
+ {
+  "pensamiento": "Solo test_issue_03 importa priorizacion; ningún otro módulo de src lo usa. Las fallas de test_issue_01 y test_issue_02 son de otros issues abiertos y ya existían antes de mi cambio. Reviso el diff para confirmar que el cambio es mínimo y solo toca priorizacion.py.",
+  "accion": "ver_cambios",
+  "args": {}
+ },
+ {
+  "pensamiento": "El diff es mínimo y solo toca la regla de los reportes sin foto. No cambié pesos con foto, ni la regla T11, ni pruebas, ni dependencias entre capas (ADR-005 y ADR-001 intactos). Las 3 pruebas del issue pasan. Las 6 fallas restantes pertenecen a los issues #1 y #2, que no dependen de priorizacion.py. Cierro con el resumen.",
+  "final": "Issue #3 resuelto.\n\nCausa: en src/modulo/priorizacion.py, la función peso() devolvía PESO_MAXIMO (4) para cualquier reporte sin foto, sin importar su gravedad. Por eso 2 reportes leves sin foto en Cayma sumaban 8 y superaban a un daño grave con foto en Yanahuara (4). Es el riesgo RI-02.\n\nCorrección (cambio mínimo, solo src/modulo/priorizacion.py):\n- Añadí PESO_MINIMO = min(PESOS.values()), que vale 1.\n- En la rama sin foto, peso() devuelve PESO_MINIMO, también si el reporte está clasificado como grave o no está clasificado. Actualicé el comentario.\n- Los pesos con foto (1, 2, 4, 4) siguen igual. La regla de un voto por dispositivo y zona (T11) tampoco cambia.\n- No toqué tests/. La arquitectura se respeta: no hay nuevas dependencias, así que ADR-005 y ADR-001 siguen intactos.\n\nResultado de las pruebas:\n- tests/test_issue_03.py: 3 de 3 pasan. Antes fallaban las 3: Cayma daba 8 y ahora da 2.\n- Suite completa: 161 pasan y 6 fallan. Las 6 fallas son de otros issues abiertos y ya existían antes del cambio:\n  - test_issue_01: se aceptan coordenadas fuera de Arequipa.\n  - test_issue_02: los reenvíos se duplican.\n- Ningún otro módulo ni prueba importa priorizacion.py, así que estas fallas no son regresiones de este cambio."
+ }
+]
