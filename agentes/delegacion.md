@@ -34,9 +34,9 @@ Ejecuciones grabadas con Claude Opus 5.5 (detalle en [observacion.md](observacio
 | Criterio de la etapa 2 → 3 | Evidencia actual | ¿Cumple? |
 |---|---|---|
 | ≥ 20 ejecuciones | 5 ejecuciones completas (issues 1, 2 y 3) | No |
-| ≥ 90 % de ediciones aprobadas en el primer intento | 4 de 4 aprobadas en las ejecuciones del 17 al 19/11. La quinta ejecución tiene un rechazo **provocado** para probar el flujo de E6 | Sí, con pocos datos |
+| ≥ 90 % de ediciones aprobadas en el primer intento | 4 de 4 en las ejecuciones con aprobación que no tenían un rechazo provocado; la quinta (`issue01/unico-extendidas`) se rechazó a propósito para probar E6 y quedó sin resolver porque el agente no recibió el motivo (ya corregido) | Sí, con pocos datos |
 | 0 acciones bloqueadas por `tests/` o por comandos | 0 | Sí |
-| ≤ 1 decisión rechazada por el contrato por ejecución | 3 en las 4 primeras ejecuciones: 2 por una llave de cierre de más y 1 por dos objetos JSON en la misma respuesta; en los 3 casos el modelo corrigió en el turno siguiente | Sí |
+| ≤ 1 decisión rechazada por el contrato por ejecución | 4 en 5 ejecuciones: 2 por una llave de cierre de más, 1 por dos objetos JSON en la misma respuesta y 1 por comillas tipográficas; en los 4 casos el modelo corrigió en el turno siguiente | Sí |
 | Ejecuciones que terminan con resumen | 1 ejecutor terminó en `LIMITE_ALCANZADO` (issue 2, multi) | Atención: hace falta más presupuesto o una instrucción de terminar antes |
 
 **Conclusión:** seguimos en la etapa 2 (revisor). La evidencia es buena pero escasa, y la etapa 3 exige al menos 20 ejecuciones.
