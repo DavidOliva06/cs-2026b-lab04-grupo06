@@ -5,6 +5,8 @@ Uso, desde la raíz del repositorio (con --modelo grabado se reproduce lo grabad
     python agentes/orquestador.py --issue 3 --variante unico --herramientas extendidas --aprobacion --modelo interactivo  # E4 + E6
     python agentes/orquestador.py --issue 2 --variante unico --aprobacion --modelo interactivo             # E5 (a)
     python agentes/orquestador.py --issue 2 --variante multi --aprobacion --modelo interactivo             # E5 (b)
+    python agentes/orquestador.py --issue 1 --variante unico --herramientas extendidas --aprobacion \
+        --etiqueta unico-extendidas --modelo interactivo                                                  # E4: mismo issue que E2
 
 Variantes:
 - unico: un agente lee, edita y verifica (máx. 15 pasos).
@@ -160,8 +162,10 @@ def main():
     p.add_argument("--herramientas", choices=["base", "extendidas"], default="base",
                    help="extendidas agrega mapa_repo, anotar y leer_notas (E4)")
     p.add_argument("--aprobacion", action="store_true", help="el humano aprueba cada edición con s/n (E6)")
+    p.add_argument("--etiqueta", help="nombre de la carpeta de la ejecución (por defecto, la variante); "
+                                      "sirve para grabar otra ejecución del mismo issue sin sobrescribir")
     args = p.parse_args()
-    carpeta = pathlib.Path(f"issue{args.issue:02d}") / args.variante
+    carpeta = pathlib.Path(f"issue{args.issue:02d}") / (args.etiqueta or args.variante)
     h = preparar_sandbox(extras=args.herramientas == "extendidas")
     agentes = {"unico": unico, "multi": multi}[args.variante](args, h, carpeta)
     for a in agentes:
