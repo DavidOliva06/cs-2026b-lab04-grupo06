@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 PESOS = {"leve": 1, "moderado": 2, "grave": 4, "colapso": 4}
 PESO_MAXIMO = max(PESOS.values())
+PESO_MINIMO = min(PESOS.values())
 
 
 @dataclass(frozen=True)
@@ -23,8 +24,8 @@ class ReporteClasificado:
 
 def peso(reporte: ReporteClasificado) -> int:
     if not reporte.tiene_foto:
-        # Sin foto no se puede verificar el daño: ante la duda se asume lo peor.
-        return PESO_MAXIMO
+        # Sin foto no se puede verificar el daño: aporta el peso mínimo hasta que llegue la foto (RI-02).
+        return PESO_MINIMO
     return PESOS.get(reporte.gravedad or "", 0)
 
 
