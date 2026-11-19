@@ -1,0 +1,85 @@
+[
+ {
+  "pensamiento": "Empiezo por el paso 1 del plan: leer la prueba del issue para conocer exactamente qué comportamiento se espera de guardar_si_no_existe y de contar(). Después leeré src/modulo/adaptadores.py para comparar AdaptadorMemoriaServidor con AdaptadorPostgres.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ "{\"pensamiento\": \"La prueba confirma la semántica: el almacén 'memoria' debe devolver True la primera vez y False la segunda para el mismo id, y contar() debe dar 1. El primer test además muestra que el celular reenvía el mismo id tras perderse la confirmación, así que la ingesta debe deduplicar. Ahora leo src/modulo/adaptadores.py para comparar AdaptadorMemoriaServidor con AdaptadorPostgres.\", \"accion\": \"leer_archivo\", \"args\": {\"ruta\": \"src/modulo/adaptadores.py\"}}\n}",
+ {
+  "pensamiento": "La prueba confirma la semántica: el almacén 'memoria' debe devolver True la primera vez y False la segunda para el mismo id, y contar() debe dar 1. El primer test además muestra que el celular reenvía el mismo id tras perderse la confirmación, así que la ingesta debe deduplicar. Ahora leo src/modulo/adaptadores.py para comparar AdaptadorMemoriaServidor con AdaptadorPostgres.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py"
+  }
+ },
+ {
+  "pensamiento": "Causa confirmada leyendo el código. AdaptadorPostgres usa INSERT ... ON CONFLICT (id) DO NOTHING y devuelve rowcount == 1, o sea True solo si insertó. Su contar() cuenta filas, que son únicas por id. AdaptadorMemoriaServidor, en cambio, hace append sin comprobar el id y devuelve True siempre, así que el reenvío duplica y contar() da 2. Ningún otro método usa self._reportes. Antes de editar reproduzco el fallo con la prueba del issue.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Fallo reproducido. En el primer test contar_reportes() da 2 en lugar de 1, por el reenvío duplicado. En el segundo, la segunda llamada devuelve True en lugar de False. Aplico el cambio mínimo solo en AdaptadorMemoriaServidor: indexo el almacén por id con un dict, devuelvo False si el id ya existe y, si no, guardo y devuelvo True. contar() sigue siendo len(), que ahora cuenta ids distintos, como Postgres. No hay otros métodos que dependan de la lista.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py",
+   "antes": "        self._reportes: list[Reporte] = []\n\n    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        self._reportes.append(reporte)\n        return True",
+   "despues": "        self._reportes: dict[str, Reporte] = {}\n\n    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        if reporte.id in self._reportes:\n            return False\n        self._reportes[reporte.id] = reporte\n        return True"
+  }
+ },
+ {
+  "pensamiento": "Edición aplicada. Paso 3 del plan: ejecuto las pruebas del issue para comprobar que ambas pasan.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Las dos pruebas del issue pasan. Ahora ejecuto la suite completa para descartar regresiones.",
+  "accion": "ejecutar_pruebas",
+  "args": {}
+ },
+ {
+  "pensamiento": "Hay 7 fallas, pero todas están en tests/test_issue_01.py (validación de coordenadas fuera de Arequipa) y tests/test_issue_03.py (peso y prioridad de reportes sin foto). Ninguna es de test_issue_02, y lo que prueban no tiene relación con el almacén en memoria del servidor. Todo apunta a fallos previos de otros issues abiertos y no a una regresión mía. Para confirmarlo, empiezo la revisión independiente con git diff: si el único cambio es el de AdaptadorMemoriaServidor, mi edición no puede haber alterado la validación de coordenadas ni la priorización.",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "git diff"
+  }
+ },
+ {
+  "pensamiento": "El diff toca un único archivo, src/modulo/adaptadores.py, y solo las líneas de AdaptadorMemoriaServidor. No hay cambios en tests/, AdaptadorPostgres, el servicio ni la ingesta. Esto confirma que las 7 fallas de issue_01 e issue_03 son previas. Ejecuto git status para descartar archivos nuevos o sin seguimiento que el diff no mostraría, por ejemplo en tests/.",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "git status"
+  }
+ },
+ {
+  "pensamiento": "git status muestra un solo archivo modificado, src/modulo/adaptadores.py. Los únicos archivos sin seguimiento son carpetas __pycache__ generadas al ejecutar pytest, sin cambios de código en tests/. Ahora compruebo ADR-005: el servicio no debe importar adaptadores. Uso lint-imports, que aplica los contratos de arquitectura del repositorio y cubre también la regla de la ingesta (ADR-001).",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "lint-imports"
+  }
+ },
+ {
+  "pensamiento": "lint-imports no está instalado en este entorno, así que reviso ADR-005 a mano. Busco en los .py toda importación de adaptadores para comprobar que solo los importa la fábrica (composición) y nunca el servicio ni la entrada.",
+  "accion": "buscar",
+  "args": {
+   "patron": "import.*adaptadores|from \\.?adaptadores|from modulo\\.adaptadores|from \\. import.*adaptadores"
+  }
+ },
+ {
+  "pensamiento": "Solo dos módulos importan adaptadores. El primero es src/modulo/fabrica.py, la raíz de composición, donde es lo esperado. El segundo es src/modulo/entrada.py, que importa solo las constantes DSN_SERVIDOR y URL_INGESTA; el diff y git status confirman que ese import ya existía y no lo introduje yo. No he leído entrada.py, así que no sé si contiene ServicioReportes o solo los reexporta: lo dejo señalado para el revisor en lugar de afirmar que cumple ADR-005. Con los dos pasos que quedan priorizo la verificación final. Primero vuelvo a ejecutar las pruebas del issue con el código definitivo.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Las dos pruebas del issue pasan de nuevo. Último paso disponible: vuelvo a ejecutar la suite completa para confirmar que el conjunto de fallas es exactamente el mismo de antes (7, todas en issue_01 e issue_03) y que no aparece ninguna nueva.",
+  "accion": "ejecutar_pruebas",
+  "args": {}
+ }
+]

@@ -1,0 +1,32 @@
+{
+ "planificador": {
+  "pasos": 1,
+  "contexto_caracteres": 4944,
+  "estado_final": "FINALIZADO"
+ },
+ "ejecutor": {
+  "permitidas": 11,
+  "herramienta:leer_archivo": 2,
+  "rechazadas_contrato": 1,
+  "herramienta:ejecutar_pruebas": 4,
+  "aprobaciones_s": 1,
+  "herramienta:editar_archivo": 1,
+  "herramienta:ejecutar_comando": 3,
+  "herramienta:buscar": 1,
+  "bloqueadas": 1,
+  "bloqueada:ejecutar_pruebas": 1,
+  "pasos": 13,
+  "contexto_caracteres": 21314,
+  "estado_final": "LIMITE_ALCANZADO"
+ },
+ "revisor": {
+  "permitidas": 6,
+  "herramienta:leer_archivo": 2,
+  "herramienta:ver_cambios": 1,
+  "herramienta:buscar": 1,
+  "herramienta:ejecutar_pruebas": 2,
+  "pasos": 7,
+  "contexto_caracteres": 17446,
+  "estado_final": "FINALIZADO"
+ }
+}
