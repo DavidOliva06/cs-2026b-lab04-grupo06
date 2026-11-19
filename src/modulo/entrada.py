@@ -33,6 +33,18 @@ __all__ = [
 
 ALMACEN_SERVIDOR_POR_DEFECTO = "postgres"
 
+# Región Arequipa aproximada como rectángulo (ISSUE-01).
+LATITUD_MIN_AREQUIPA, LATITUD_MAX_AREQUIPA = -17.30, -14.60
+LONGITUD_MIN_AREQUIPA, LONGITUD_MAX_AREQUIPA = -75.10, -70.80
+
+
+def ubicacion_en_arequipa(ubicacion: tuple[float, float]) -> bool:
+    latitud, longitud = ubicacion
+    return (
+        LATITUD_MIN_AREQUIPA <= latitud <= LATITUD_MAX_AREQUIPA
+        and LONGITUD_MIN_AREQUIPA <= longitud <= LONGITUD_MAX_AREQUIPA
+    )
+
 
 # --- Lado del servidor ------------------------------------------------------
 
@@ -62,6 +74,8 @@ class ServicioIngesta:
             )
         except (ValueError, KeyError, TypeError):
             return RespuestaHttp(400, "Reporte inválido")
+        if not ubicacion_en_arequipa(reporte.ubicacion):
+            return RespuestaHttp(400, "Ubicación fuera de la región Arequipa")
         self.recibir(reporte)
         return RespuestaHttp(200, json.dumps({"id": reporte.id, "recibido": True}))
 
