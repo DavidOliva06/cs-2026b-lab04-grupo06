@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    actor U as Humano
+    participant AG as Agente único
+    participant P as Política
+    participant H as Herramientas
+    U->>AG: objetivo
+    AG->>H: leer_archivo
+    H-->>AG: contenido de ISSUE-01.md
+    AG->>H: leer_archivo
+    H-->>AG: contenido de test_issue_01.py
+    AG->>H: leer_archivo
+    H-->>AG: contenido de entrada.py
+    AG->>H: ejecutar_pruebas
+    H-->>AG: 4 failed, 3 passed in 0.03s
+    AG->>H: editar_archivo
+    H-->>AG: OK, archivo modificado
+    AG->>H: editar_archivo
+    H-->>AG: OK, archivo modificado
+    AG->>H: ejecutar_pruebas
+    H-->>AG: 7 passed in 0.02s
+    AG->>H: ejecutar_pruebas
+    H-->>AG: 5 failed, 162 passed in 4.49s
+    Note right of AG: decisión rechazada por el contrato
+    AG->>H: listar_archivos
+    H-->>AG: 3 archivos
+    AG->>H: leer_archivo
+    H-->>AG: contenido de test_issue_02.py
+    AG->>H: ejecutar_comando
+    H-->>AG: ADR-005: las dependencias van en un solo
+    AG->>H: ver_cambios
+    H-->>AG: diff de 19 líneas
+    AG-->>U: ISSUE-01 resuelto.  CAUSA: ServicioIngesta.ma

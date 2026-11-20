@@ -1,0 +1,44 @@
+[
+ "{“pensamiento”: “Primero necesito conocer el issue: qué falla, qué prueba lo reproduce y qué comportamiento se espera. Leo issues/ISSUE-01.md antes de explorar el código.”, “accion”: “leer_archivo”, “args”: {“ruta”: “issues/ISSUE-01.md”}}",
+ {
+  "pensamiento": "Primero necesito conocer el issue: qué falla, qué prueba lo reproduce y qué comportamiento se espera. Leo issues/ISSUE-01.md antes de explorar el código.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "issues/ISSUE-01.md"
+  }
+ },
+ {
+  "pensamiento": "El issue es claro: falta validar que la ubicación esté dentro del rectángulo de Arequipa (lat -17.30 a -14.60, lon -75.10 a -70.80) y responder 400 si no. Antes de tocar código, ejecuto la prueba del issue para reproducir el fallo y ver exactamente qué espera (formato de la respuesta, código, si revisa que no se guarde).",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_01.py"
+  }
+ },
+ {
+  "pensamiento": "Fallo reproducido: 4 casos fuera de la región devuelven 200 en vez de 400; los 3 de dentro pasan. Ahora leo src/modulo/entrada.py para ver cómo manejar_post parsea la ubicación y cómo responde otros errores de validación (para usar el mismo patrón de 400).",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "src/modulo/entrada.py"
+  }
+ },
+ {
+  "pensamiento": "Causa probable: manejar_post arma la ubicación con float() sin comprobar el rango, y solo devuelve 400 ante errores de parseo. Antes de editar, leo la prueba para saber si exige un texto concreto en la respuesta o verifica el almacén, y así elegir el cambio mínimo correcto.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "tests/test_issue_01.py"
+  }
+ },
+ {
+  "pensamiento": "La prueba solo exige status 400 y que no se guarde nada (contar_reportes() == 0), sin un texto concreto. Causa confirmada: manejar_post no valida el rango de la ubicación. El cambio mínimo y respetuoso de ADR-005 va en la capa de entrada: defino los límites de la región como constantes de módulo y luego compruebo antes de llamar a recibir(). No lo pongo en el modelo para no cambiar el comportamiento del lado de la PWA (crear_reporte), que el issue no pide. Primera edición: las constantes.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/entrada.py",
+   "antes": "ALMACEN_SERVIDOR_POR_DEFECTO = \"postgres\"\n",
+   "despues": "ALMACEN_SERVIDOR_POR_DEFECTO = \"postgres\"\n\n# Rectángulo que se toma como región Arequipa (ISSUE-01).\nLATITUD_MIN_AREQUIPA, LATITUD_MAX_AREQUIPA = -17.30, -14.60\nLONGITUD_MIN_AREQUIPA, LONGITUD_MAX_AREQUIPA = -75.10, -70.80\n\n\ndef ubicacion_en_arequipa(ubicacion: tuple[float, float]) -> bool:\n    latitud, longitud = ubicacion\n    return (\n        LATITUD_MIN_AREQUIPA <= latitud <= LATITUD_MAX_AREQUIPA\n        and LONGITUD_MIN_AREQUIPA <= longitud <= LONGITUD_MAX_AREQUIPA\n    )\n"
+  }
+ },
+ {
+  "pensamiento": "Un revisor humano rechazó la edición sin dar el motivo. No voy a reintentar variantes de la misma edición para ver si alguna pasa: no sé si objeta el lugar (entrada vs. modelo), el tamaño del cambio o algo más, así que debe decidirlo el revisor. Me detengo y entrego el diagnóstico, la corrección propuesta y las alternativas.",
+  "final": "Estado: SIN RESOLVER. La única edición que intenté fue rechazada por el revisor humano y no reintenté otras variantes sin saber el motivo.\n\nCausa (confirmada):\n- En src/modulo/entrada.py, ServicioIngesta.manejar_post (líneas 53-66) convierte latitud y longitud con float() y solo responde 400 si falla el parseo (ValueError/KeyError/TypeError).\n- Nunca comprueba que la ubicación caiga en la región Arequipa, así que cualquier par de números se guarda con recibir() y responde 200.\n\nReproducción: tests/test_issue_01.py da 4 fallos (Lima, Cusco, Tacna y signos invertidos: 200 en lugar de 400) y 3 aciertos (Cercado, Majes y Mollendo).\n\nCorrección propuesta (rechazada; solo afecta a src/modulo/entrada.py y no toca adaptadores, según ADR-005):\n- Añadir constantes de módulo con el rectángulo: latitud de -17.30 a -14.60 y longitud de -75.10 a -70.80.\n- Añadir una función ubicacion_en_arequipa(ubicacion) que compruebe que ambos valores están dentro de esos límites, con los extremos incluidos.\n- En manejar_post, justo después del bloque try/except y antes de self.recibir(reporte), añadir: si not ubicacion_en_arequipa(reporte.ubicacion), devolver RespuestaHttp(400, \"Ubicación fuera de la región Arequipa\").\n\nCon ese cambio, los 7 casos de la prueba deberían pasar: los de fuera responden 400 sin guardar y los de dentro siguen igual. No lo he verificado porque la edición no se aplicó.\n\nArchivos cambiados: ninguno.\n\nPruebas: siguen 4 fallos y 3 aciertos en tests/test_issue_01.py.\n\nPara continuar necesito que el revisor indique qué prefiere:\n(a) la misma validación en una versión más pequeña, en línea dentro de manejar_post y sin constantes nuevas;\n(b) moverla al modelo (Reporte o un validador en modulo/modelo.py), aunque eso también afectaría a crear_reporte en la PWA;\n(c) otro enfoque."
+ }
+]

@@ -1,0 +1,15 @@
+{
+ "agente": {
+  "permitidas": 12,
+  "herramienta:leer_archivo": 4,
+  "herramienta:ejecutar_pruebas": 3,
+  "herramienta:editar_archivo": 2,
+  "rechazadas_contrato": 1,
+  "herramienta:listar_archivos": 1,
+  "herramienta:ejecutar_comando": 1,
+  "herramienta:ver_cambios": 1,
+  "pasos": 14,
+  "contexto_caracteres": 26339,
+  "estado_final": "FINALIZADO"
+ }
+}

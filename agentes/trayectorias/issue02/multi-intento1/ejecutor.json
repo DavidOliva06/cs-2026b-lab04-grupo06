@@ -1,0 +1,60 @@
+[
+ {
+  "pensamiento": "Paso 1 del plan: leo src/modulo/adaptadores.py para comparar AdaptadorMemoriaServidor con AdaptadorPostgres en guardar_si_no_existe y contar(). Después leeré tests/test_issue_02.py sin editarlo.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py"
+  }
+ },
+ {
+  "pensamiento": "Causa probable confirmada: AdaptadorMemoriaServidor guarda en una lista y hace append sin comprobar el id, así que siempre devuelve True y contar() cuenta duplicados. AdaptadorPostgres, en cambio, usa ON CONFLICT (id) DO NOTHING y devuelve rowcount == 1. Antes de editar leo tests/test_issue_02.py, sin modificarlo, para confirmar que el id identifica al reporte y qué valores de retorno se esperan.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Las pruebas confirman que el reporte se identifica por su id ('r-1') y que, igual que Postgres, el primer guardado debe devolver True, el segundo False y contar() debe quedar en 1. Antes de corregir reproduzco el fallo ejecutando solo las pruebas del issue.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Fallo reproducido: contar_reportes() devuelve 2 en lugar de 1, y el segundo guardado devuelve True en lugar de False. La causa es que AdaptadorMemoriaServidor hace append a una lista sin comprobar el id. Corrijo solo esa clase: el almacén pasa a ser un dict id→reporte, guardar_si_no_existe devuelve False sin guardar si el id ya existe y True si guarda, y contar() devuelve el número de ids distintos. Así reproduce el comportamiento de ON CONFLICT (id) DO NOTHING de Postgres.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py",
+   "antes": "    def __init__(self) -> None:\n        self._reportes: list[Reporte] = []\n\n    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        self._reportes.append(reporte)\n        return True\n\n    def contar(self) -> int:\n        return len(self._reportes)",
+   "despues": "    def __init__(self) -> None:\n        # Indexado por id, igual que la clave primaria de PostgreSQL.\n        self._reportes: dict[str, Reporte] = {}\n\n    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        # Equivale a ON CONFLICT (id) DO NOTHING: un reenvío con el mismo id no duplica.\n        if reporte.id in self._reportes:\n            return False\n        self._reportes[reporte.id] = reporte\n        return True\n\n    def contar(self) -> int:\n        return len(self._reportes)"
+  }
+ },
+ {
+  "pensamiento": "Edición aplicada. Ahora ejecuto las pruebas del issue para confirmar que pasan las dos.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Pasan las dos pruebas del issue. Ahora ejecuto toda la carpeta tests/ para descartar regresiones.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/"
+  }
+ },
+ {
+  "pensamiento": "Quedan 7 fallos, pero todos están en test_issue_01 (validación de coordenadas fuera de Arequipa) y test_issue_03 (peso de reportes sin foto). Corresponden a otros issues abiertos y no tienen relación con la deduplicación por id del almacén en memoria. Mi cambio solo hace que un id repetido no se guarde dos veces, así que no puede convertir un rechazo 400 en un 200 ni cambiar pesos de prioridad. No puedo revertir mi cambio para confirmarlo empíricamente con los comandos permitidos. Paso al rol de revisor: compruebo con git diff que el cambio toca solo AdaptadorMemoriaServidor.",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "git diff"
+  }
+ },
+ {
+  "pensamiento": "Quedan 7 fallos, pero todos están en test_issue_01 (validación de coordenadas fuera de Arequipa) y test_issue_03 (peso de reportes sin foto). Corresponden a otros issues abiertos y no tienen relación con la deduplicación por id del almacén en memoria. Mi cambio solo hace que un id repetido no se guarde dos veces, así que no puede convertir un rechazo 400 en un 200 ni cambiar pesos de prioridad. No puedo revertir mi cambio para confirmarlo empíricamente con los comandos permitidos. Paso al rol de revisor: compruebo con git diff que el cambio toca solo AdaptadorMemoriaServidor.",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "git diff"
+  }
+ }
+]

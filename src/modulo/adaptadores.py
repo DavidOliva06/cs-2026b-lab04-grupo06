@@ -98,3 +98,19 @@ class AdaptadorPostgres(AlmacenServidorReportes):
         cursor = self._conexion.cursor()
         cursor.execute("SELECT COUNT(*) FROM reportes")
         return cursor.fetchone()[0]
+
+
+class AdaptadorMemoriaServidor(AlmacenServidorReportes):
+    """Almacén del servidor en memoria, para desarrollo y demostraciones sin PostgreSQL."""
+
+    def __init__(self) -> None:
+        self._reportes: dict[str, Reporte] = {}
+
+    def guardar_si_no_existe(self, reporte: Reporte) -> bool:
+        if reporte.id in self._reportes:
+            return False
+        self._reportes[reporte.id] = reporte
+        return True
+
+    def contar(self) -> int:
+        return len(self._reportes)

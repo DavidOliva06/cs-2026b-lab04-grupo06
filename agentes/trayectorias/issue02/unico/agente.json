@@ -1,0 +1,61 @@
+[
+ {
+  "pensamiento": "Primero leo el issue para entender el fallo descrito, qué prueba lo reproduce y qué comportamiento se espera.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "issues/ISSUE-02.md"
+  }
+ },
+ {
+  "pensamiento": "El issue apunta a AdaptadorMemoriaServidor en src/modulo/adaptadores.py. Antes de leer el código, reproduzco el fallo ejecutando la prueba del issue para confirmar que ambas pruebas fallan y ver el mensaje exacto.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ "{\"pensamiento\": \"Fallo reproducido: se cuentan 2 reportes en vez de 1, y la segunda llamada devuelve True en vez de False. Ahora leo src/modulo/adaptadores.py para ver la implementación de AdaptadorMemoriaServidor y compararla con AdaptadorPostgres.\", \"accion\": \"leer_archivo\", \"args\": {\"ruta\": \"src/modulo/adaptadores.py\"}}}",
+ {
+  "pensamiento": "Fallo reproducido: se cuentan 2 reportes en vez de 1, y la segunda llamada devuelve True en vez de False. Ahora leo src/modulo/adaptadores.py para ver la implementación de AdaptadorMemoriaServidor y compararla con AdaptadorPostgres.",
+  "accion": "leer_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py"
+  }
+ },
+ {
+  "pensamiento": "Causa localizada: AdaptadorMemoriaServidor.guardar_si_no_existe (líneas 109-111) hace append incondicional y siempre devuelve True, sin comprobar si ya existe un reporte con ese id. AdaptadorPostgres, en cambio, usa ON CONFLICT (id) DO NOTHING y devuelve True solo si insertó una fila. El cambio mínimo es comprobar el id antes de guardar y devolver False si ya existe; contar() queda correcto porque la lista ya no tendrá duplicados. No toco el servicio, las pruebas ni AdaptadorPostgres, y respeto ADR-005 porque el cambio queda dentro del adaptador.",
+  "accion": "editar_archivo",
+  "args": {
+   "ruta": "src/modulo/adaptadores.py",
+   "antes": "    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        self._reportes.append(reporte)\n        return True",
+   "despues": "    def guardar_si_no_existe(self, reporte: Reporte) -> bool:\n        if any(existente.id == reporte.id for existente in self._reportes):\n            return False\n        self._reportes.append(reporte)\n        return True"
+  }
+ },
+ {
+  "pensamiento": "Edición aplicada. Verifico primero que las dos pruebas del issue pasen ahora.",
+  "accion": "ejecutar_pruebas",
+  "args": {
+   "ruta": "tests/test_issue_02.py"
+  }
+ },
+ {
+  "pensamiento": "Las dos pruebas del issue pasan. Ejecuto la suite completa para confirmar que no hay regresiones en otras partes del repositorio.",
+  "accion": "ejecutar_pruebas",
+  "args": {}
+ },
+ {
+  "pensamiento": "Las 7 fallas pertenecen a test_issue_01 (validación de coordenadas fuera de Arequipa) y test_issue_03 (peso de reportes sin foto), que son otros issues abiertos y no tienen relación con el almacén en memoria. Para asegurar que no son regresiones mías, reviso el diff y confirmo que mi único cambio es el de guardar_si_no_existe.",
+  "accion": "ver_cambios",
+  "args": {}
+ },
+ {
+  "pensamiento": "El diff confirma que el único cambio está en AdaptadorMemoriaServidor.guardar_si_no_existe. Mi cambio no toca validación de coordenadas ni cálculo de pesos, así que las fallas de los issues 01 y 03 son de issues abiertos, no regresiones. Como comprobación final, ejecuto lint-imports para verificar que se siguen cumpliendo los contratos de arquitectura (ADR-005 y ADR-001).",
+  "accion": "ejecutar_comando",
+  "args": {
+   "comando": "lint-imports"
+  }
+ },
+ {
+  "pensamiento": "lint-imports no está instalado en el entorno, así que no puedo ejecutarlo. Aun así, el cambio no añade importaciones y queda dentro del adaptador, por lo que ADR-005 y ADR-001 no se ven afectados. Las pruebas del issue pasan y la suite no muestra regresiones atribuibles al cambio. Termino con el resumen.",
+  "final": "Issue #2 resuelto.\n\nCAUSA: En src/modulo/adaptadores.py, AdaptadorMemoriaServidor.guardar_si_no_existe hacía append del reporte sin comprobar nada y siempre devolvía True. Por eso, cuando el celular reenviaba el mismo reporte (mismo id) tras perder la confirmación, el almacén en memoria lo guardaba dos veces, contar() devolvía 2 y la segunda llamada devolvía True. AdaptadorPostgres sí deduplica con ON CONFLICT (id) DO NOTHING y devuelve rowcount == 1.\n\nCORRECCIÓN (cambio mínimo, solo en el adaptador): antes de guardar se comprueba si ya existe un reporte con el mismo id. Si existe, se devuelve False sin guardar; si no, se guarda y se devuelve True. Así contar() cuenta reportes distintos y el comportamiento coincide con el de AdaptadorPostgres. No se tocaron las pruebas, AdaptadorPostgres ni el servicio del celular. La deduplicación queda en el lado del servidor, que es lo que pide el issue, y se respetan ADR-005 y ADR-001: el cambio no añade importaciones ni sale del adaptador.\n\nARCHIVOS CAMBIADOS: src/modulo/adaptadores.py (+2 líneas en AdaptadorMemoriaServidor.guardar_si_no_existe).\n\nRESULTADO DE LAS PRUEBAS:\n- tests/test_issue_02.py: antes fallaban 2 de 2; ahora pasan las 2 (test_issue_02_reenvio_tras_respuesta_perdida_no_duplica y test_issue_02_mismo_reporte_dos_veces_devuelve_false_la_segunda).\n- Suite completa: 160 pruebas pasan y 7 fallan. Las 7 fallas son de tests/test_issue_01.py (coordenadas fuera de Arequipa) y tests/test_issue_03.py (peso de reportes sin foto). Corresponden a otros issues abiertos, sin relación con el almacén en memoria, y el diff confirma que mi único cambio no toca esa lógica.\n- No pude ejecutar lint-imports porque no está instalado en el entorno."
+ }
+]

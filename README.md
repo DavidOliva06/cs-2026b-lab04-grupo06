@@ -100,6 +100,7 @@ flowchart TB
 - [ADR-002: Cola de Trabajos en PostgreSQL](docs/architecture/adr/002-cola-de-trabajos-en-postgresql.md)
 - [ADR-003: PWA offline-first](docs/architecture/adr/003-pwa-offline-first.md)
 - [ADR-004: Puerto ConsultaZonasAsignadas](docs/architecture/adr/004-puerto-priorizacion-brigadas.md)
+- [ADR-010: Arquitectura del sistema agéntico](docs/architecture/adr/010-sistema-agentico.md) (Lab 10)
 ## Diseño UML (Lab 05)
 
 Diseño detallado de la historia [HU-01: Enviar un reporte sin señal y sincronizarlo](docs/design/historia.md).
@@ -363,6 +364,61 @@ Detalle por caso y por aserción:
 
 - **Un solo Pull Request** (`lab09-prompts` → `main`). El laboratorio se desarrolló de forma individual, así que la revisión cruzada entre integrantes no aplica. El PR incluye la lista de verificación del Paso 9 aplicada por el autor.
 - **Etiqueta:** `v0.9-prompts`.
+
+## Sistemas agénticos (Lab 10)
+
+**Qué hay:** un agente de IA que resuelve issues del propio repositorio, en [agentes/](agentes/).
+- Se construyó sobre el mini framework del curso, adaptado a SismoReporta.
+- Los 3 issues ([issues/](issues/)) tienen una prueba que los reproduce: `tests/test_issue_0N.py`.
+- Las decisiones las tomó **Claude Opus 5.5** (esfuerzo Alto) en Claude.ai, con `ModeloInteractivo`, y quedaron grabadas en [agentes/trayectorias/](agentes/trayectorias/).
+- `python agentes/reproducir.py` las repite con `ModeloGrabado`, sin clave de API. El workflow [agentes.yml](.github/workflows/agentes.yml) lo hace en cada Pull Request.
+
+**Documentos:**
+- Diseño: [lienzo](agentes/diseno/lienzo.md).
+- Decisión de arquitectura: [ADR-010](docs/architecture/adr/010-sistema-agentico.md).
+- Hoja de ruta de autonomía: [delegación](agentes/delegacion.md).
+- Métricas y análisis: [observación](agentes/observacion.md).
+- Registro de interacciones: [bitácora](agentes/bitacora-ia.md).
+
+```bash
+python -m pytest -q agentes/pruebas_agente            # contrato, política, herramientas, aprobación y estados
+python agentes/reproducir.py                          # reproduce las 5 ejecuciones y verifica cada issue
+python agentes/orquestador.py --issue 2 --variante multi --aprobacion --modelo interactivo   # grabar
+```
+
+### Máquina de estados del agente
+
+![Máquina de estados](agentes/diseno/estados.png)
+
+Cada estado es un valor de la traza (`agente/nucleo.py`). Una prueba verifica que todos los estados del [diagrama](agentes/diseno/estados.puml) existen en el código.
+
+### Trayectoria: issue 2 con planificador, ejecutor y revisor
+
+![Trayectoria del issue 2](agentes/trazas/issue02/multi/trayectoria.png)
+
+### Métricas de las trazas (E7)
+
+| Issue | Variante | Pasos | Rondas | Rechazadas por el contrato | Bloqueadas | Aprobaciones | Contexto final | Resultado |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Agente único (E2) | 14 | — | 1 | 0 | — | 25 584 | Resuelto (7/7) |
+| 1 | Único + mapa_repo y notas + aprobación | 7 | — | 1 | 1 | `n` provocado | 18 603 | Sin resolver (rechazo humano a propósito) |
+| 3 | Único + mapa_repo y notas + aprobación (E4) | 10 | — | 0 | 0 | 2 `s` | 13 981 | Resuelto (3/3) |
+| 2 | Agente único + aprobación (E5) | 10 | — | 1 | 0 | 1 `s` | 17 138 | Resuelto (2/2) |
+| 2 | Planificador + ejecutor + revisor (E5) | 21 | 1 de 2 | 1 | 1 (límite) | 1 `s` | 43 491 | Resuelto (2/2) |
+
+**Hallazgos:**
+- **Parsimonia:** el actor-crítico costó 2,5 veces el contexto del agente único y su revisor no encontró nada más. Por eso el agente único es la configuración por defecto.
+- **Herramientas nuevas:** el agente no usó `mapa_repo` ni las notas, porque cada issue nombra el archivo.
+- **Lo que detectó errores fue lo determinista:**
+  - el contrato, 4 respuestas mal formadas;
+  - las pruebas de E3, 2 errores del framework del curso;
+  - las trazas, un `git diff` vacío y `lint-imports` no disponible en el sandbox.
+- **Cambios aplicados:** los 3 cambios del agente se aplicaron con aprobación humana. La suite completa pasa (167 pruebas) y `lint-imports` da 4 kept, 0 broken.
+
+### Revisión y entrega
+
+- **Pull Request:** uno solo (`lab10-agentes` → `main`). El laboratorio es individual, así que la revisión cruzada entre grupos no aplica. El humano revisó cada edición del agente desde la consola.
+- **Etiqueta:** `v1.0-agentes`.
 
 ## Reflexión sobre el uso de la IA (5–8 líneas)
 La IA seleccionada en este caso Claude Opus 5.5 y Claude Sonnet 5.5, se encargaron de la creacion de los diagramas, el analisis de los drivers iniciales, y la construccion de la matriz de decision, ademas ayudaron a automatizar procesos como la conversion de texto a markdown.
